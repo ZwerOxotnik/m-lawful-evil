@@ -1,0 +1,11 @@
+{
+  "name": "lawful-evil",
+  "version": "0.2.0",
+  "factorio_version": "0.16",
+  "title": "Lawful Evil",
+  "author": "Luke Perkin",
+  "contact": "",
+  "www": "www.locogame.co.uk",
+  "description": "players can propose and pass laws",
+  "dependencies": ["base >= 0.16.0"]
+}

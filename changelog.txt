@@ -1,0 +1,20 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.2.0
+Date: 22. 01. 2019
+  Features:
+    - Link laws so they are all passed as one. Useful for preventing build then mine exploits.
+    - "If fine fails" effect, that is triggered if a previous fine has failed to execute.
+    - "If nth offence" effect, useful for only triggering effects after multiple offences.
+    - "When player tiles" and "When player mines tiles" clause types.
+  
+---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 18. 01. 2019
+  Bugfixes:
+    - "similar entity type" option now works as intended
+
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 18. 01. 2019
+  Features:
+    - Released
