@@ -6,6 +6,5 @@
   "author": "Luke Perkin",
   "contact": "",
   "www": "www.locogame.co.uk",
-  "description": "players can propose and pass laws",
   "dependencies": ["base"]
 }
