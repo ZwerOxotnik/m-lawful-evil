@@ -1250,7 +1250,7 @@ function CreateLawfulEvilGUI(player)
             direction = "horizontal"
         }
         meta_flow.style.horizontally_stretchable = true
-        meta_flow.style.align = "center"
+        meta_flow.style.horizontal_align = "center"
         if not law.linked_law then
             meta_flow.add{
                 type = "label",
