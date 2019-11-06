@@ -189,7 +189,7 @@ end)
 
 script.on_nth_tick(60, function(event)
     -- Check Laws.
-    for i, law in ipairs(global.laws) do
+    for i, law in pairs(global.laws) do
         if not law.passed and not law.hidden and not law.linked_law and game.tick >= law.vote_end_tick then
             local votes = GetLawVotes(law)
             if votes.ayes > votes.noes then
