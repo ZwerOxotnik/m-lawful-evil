@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.3
+Date: 06. 11. 2019
+  Bugfixes:
+    - Fixed bugs related to desync
+    - Fixed offences
+    - Fixed some bugs with mod "Multiplayer Trading"
+  Changes:
+    - Improved localization
+    - Counts votes in minutes instead of seconds
+  Notes:
+    - This update for Factorio 0.17 and updated by ZwerOxotnik
+    - I need much more tests etc
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.2
 Date: 06. 11. 2019
   Features:
