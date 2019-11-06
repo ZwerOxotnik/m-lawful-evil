@@ -50,40 +50,44 @@ Event.register(defines.events.on_console_chat, function(event)
     ExecuteLaws(laws, event)
 end)
 
-Event.register(defines.events.on_entity_died, function(event) 
+Event.register(defines.events.on_entity_died, function(event)
     local cause = event.cause
-    if cause then
-        local player = nil
-        if cause.type == "car" then
-            player = cause.get_driver()
-        elseif cause.type == "player" then
-            player = cause.player
-        end
-        local laws = LawMatch(WHEN_PLAYER_DESTROYS, event.entity.name, event.force, player)
-        if player.is_player() then
-            event.player_index = player.index
-        end
-        event.force = cause.force
-        ExecuteLaws(laws, event)
+    if not (cause and cause.valid) then return end
+
+    local player
+    if cause.type == "car" then
+        player = cause.get_driver()
+    elseif cause.type == "player" then
+        player = cause.player
     end
+    if not (player and player.valid) then return end
+
+    local laws = LawMatch(WHEN_PLAYER_DESTROYS, event.entity.name, event.force, player)
+    if player.is_player() then
+        event.player_index = player.index
+    end
+    event.force = cause.force
+    ExecuteLaws(laws, event)
 end)
 
-Event.register(defines.events.on_entity_damaged, function(event) 
+Event.register(defines.events.on_entity_damaged, function(event)
     local cause = event.cause
-    if cause then
-        local player = nil
-        if cause.type == "car" then
-            player = cause.get_driver()
-        elseif cause.type == "player" then
-            player = cause.player
-        end
-        local laws = LawMatch(WHEN_PLAYER_DAMAGES, event.entity.name, event.force, player)
-        if player.is_player() then
-            event.player_index = player.index
-        end
-        event.force = cause.force
-        ExecuteLaws(laws, event)
+    if not (cause and cause.valid) then return end
+
+    local player
+    if cause.type == "car" then
+        player = cause.get_driver()
+    elseif cause.type == "player" then
+        player = cause.player
     end
+    if not (player and player.valid) then return end
+
+    local laws = LawMatch(WHEN_PLAYER_DAMAGES, event.entity.name, event.force, player)
+    if player.is_player() then
+        event.player_index = player.index
+    end
+    event.force = cause.force
+    ExecuteLaws(laws, event)
 end)
 
 Event.register(defines.events.on_built_entity, function(event)
@@ -178,7 +182,7 @@ end)
 
 script.on_nth_tick(3, function(event)
     -- Remove items (queued up via law effects)
-    for i, player in pairs(game.players) do
+    for _, player in pairs(game.players) do -- TODO: change for connected players
         local data = Player.get_data(player)
         if data.remove_item then
             player.remove_item(data.remove_item)
@@ -187,7 +191,7 @@ script.on_nth_tick(3, function(event)
     end
 end)
 
-script.on_nth_tick(1800, function(event)
+local function CheckLaws()
     -- Check Laws.
     for _, law in pairs(global.laws) do
         if not law.passed and not law.hidden and not law.linked_law and game.tick >= law.vote_end_tick then
@@ -204,12 +208,13 @@ script.on_nth_tick(1800, function(event)
 
     -- Refresh Lawful Gui.
     RefreshAllLawfulEvilGui()
-end)
+end
 
-script.on_nth_tick(60*60, function(event)
+local function CheckProductionRates()
     if not global.production_rates then
         global.production_rates = {}
     end
+
     for i, force in pairs(game.forces) do
         if not global.production_rates[force.name] then
             global.production_rates[force.name] = {
@@ -239,6 +244,11 @@ script.on_nth_tick(60*60, function(event)
             end
         end
     end
+end
+
+script.on_nth_tick(3600, function(event)
+    CheckLaws()
+    CheckProductionRates()
 end)
 
 Gui.on_click("lawful_evil_button", function(event)
@@ -1009,11 +1019,12 @@ function RevokeLaw(law)
     law.passed = false
     law.hidden = true
     game.print({"lawful-evil.messages.law-is-revoked", law.title})
-    for _, other_law in pairs(global.laws) do
-        if other_law.linked_law == law.index then
-            RevokeLaw(other_law)
-        end
-    end
+    -- Why this is here???
+    -- for _, other_law in pairs(global.laws) do
+    --     if other_law.linked_law == law.index then
+    --         RevokeLaw(other_law)
+    --     end
+    -- end
 end
 
 function RevokeVoteLaw(law, player, vote)

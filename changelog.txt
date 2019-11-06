@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.4
+Date: 06. 11. 2019
+  Bugfixes:
+    - Fixed related to revoking laws
+    - Fixed on_entity_died, on_entity_damaged events
+  Notes:
+    - This update for Factorio 0.17 and updated by ZwerOxotnik
+    - I need much more tests etc
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.3
 Date: 06. 11. 2019
   Bugfixes:
