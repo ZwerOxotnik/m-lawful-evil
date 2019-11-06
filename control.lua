@@ -37,9 +37,21 @@ end)
 --     end
 -- end)
 
-Event.register(defines.events.on_player_created, function(event) 
+local function AddLawfulButton(player)
+    local gui = player.gui.top
+    if gui.lawful_evil_button then
+        gui.lawful_evil_button.destroy()
+    end
+    local button = gui.add{
+        type = "sprite-button",
+        name = "lawful_evil_button",
+        sprite = "lawful-button-sprite"
+    }
+end
+
+Event.register(defines.events.on_player_created, function(event)
     local player = Event.get_player(event)
-    LawfulButton(player)
+    AddLawfulButton(player)
 end)
 
 Event.register(defines.events.on_console_chat, function(event) 
@@ -1064,14 +1076,6 @@ function GetLawRevokeVotes(law)
     return revoke_count
 end
 
-function LawfulButton(player)
-    local button = player.gui.top.add{
-        type = "sprite-button",
-        name = "lawful_evil_button",
-        sprite = "lawful-button-sprite"
-    }
-end
-
 local _technologies = nil
 function GetTechnologies()
     if _technologies == nil then
@@ -1780,3 +1784,11 @@ function CreateValueFields(gui, clause, prefix, read_only)
         end
     end
 end
+
+local function on_configuration_changed(event)
+    for _, player in pairs(game.players) do
+        AddLawfulButton(player)
+    end
+end
+
+script.on_configuration_changed(on_configuration_changed)
