@@ -443,7 +443,7 @@ function CreateNewLaw(player)
         creator = player and player.name or "no-one",
         passed = false,
         votes = {},
-        vote_end_tick = game.tick + settings.global['voting-duration'].value,
+        vote_end_tick = game.tick + settings.global['voting-duration'].value * 60 * 60,
         revoke_votes = {},
         clauses = {
             {
