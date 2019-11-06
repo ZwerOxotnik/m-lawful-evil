@@ -1447,13 +1447,13 @@ function CreateLawGUI(event)
             buttons.add{
                 type = "button",
                 name = "revoke_law_" .. law.index,
-                caption = {"lawful-evil.gui.vote-to-revoke"}
+                caption = {"lawful-evil.gui.revoke-law"}
             }
             local votes = GetLawVotes(law)
             local revoke_votes = GetLawRevokeVotes(law)
             buttons.add{
                 type = "label",
-                caption = (votes.ayes - revoke_votes) .. " votes left to revoke."
+                caption = {"lawful-evil.gui.votes-left-to-revoke", (votes.ayes - revoke_votes)}
             }
         end
     end
