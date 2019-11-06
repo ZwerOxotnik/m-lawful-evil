@@ -836,7 +836,7 @@ end
 function ExecuteEffect(law, effect, event)
     local force = event.force
     local player = Event.get_player(event)
-    local offence_count = law.offenses[event.player_index] -- TODO: fix
+    local offence_count = law.offences[event.player_index]
     local value = effect.effect_value
     if value ~= nil and effect.effect_value_type == VALUE_TYPE_PERCENTAGE then
         value = CalculatePercentageValue(
