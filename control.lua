@@ -30,7 +30,7 @@ script.on_init(function()
 end)
 
 -- commands.add_command("pass-laws", "pass laws", function()
---     for _, law in ipairs(global.laws) do
+--     for _, law in pairs(global.laws) do
 --         if not law.passed then
 --             PassLaw(law)
 --         end
@@ -112,7 +112,7 @@ end)
 
 Event.register(defines.events.on_player_built_tile, function(event)
     local player = Event.get_player(event)
-    for _, tile in ipairs(event.tiles) do
+    for _, tile in pairs(event.tiles) do
         local laws = LawMatch(WHEN_PLAYER_TILES, event.item.name, player.force, player)
         event.force = player.force
         ExecuteLaws(laws, event)
@@ -121,7 +121,7 @@ end)
 
 Event.register(defines.events.on_player_mined_tile, function(event)
     local player = Event.get_player(event)
-    for _, tile in ipairs(event.tiles) do
+    for _, tile in pairs(event.tiles) do
         event.item = tile.old_tile.items_to_place_this
         local laws = LawMatch(WHEN_PLAYER_MINES_TILES, event.item.name, player.force, player)
         event.force = player.force
@@ -187,9 +187,9 @@ script.on_nth_tick(3, function(event)
     end
 end)
 
-script.on_nth_tick(60, function(event)
+script.on_nth_tick(1800, function(event)
     -- Check Laws.
-    for i, law in pairs(global.laws) do
+    for _, law in pairs(global.laws) do
         if not law.passed and not law.hidden and not law.linked_law and game.tick >= law.vote_end_tick then
             local votes = GetLawVotes(law)
             if votes.ayes > votes.noes then
@@ -418,14 +418,14 @@ Gui.on_selection_state_changed(".+", function(event)
         local gui = GetLawGui(player)
         local law = SaveLaw(gui)
         gui.clauses_frame.clauses.clear()
-        for _, clause in ipairs(law.clauses) do
+        for _, clause in pairs(law.clauses) do
             CreateClauseGUI(gui.clauses_frame.clauses, clause)
         end
     elseif elem.parent.parent.name == "effects" then
         local gui = GetLawGui(player)
         local law = SaveLaw(gui)
         gui.effects_frame.effects.clear()
-        for _, effect in ipairs(law.effects) do
+        for _, effect in pairs(law.effects) do
             CreateEffectGUI(gui.effects_frame.effects, effect)
         end
     end
@@ -489,7 +489,7 @@ function SaveLaw(gui)
         law.description = gui.law_description.text
     end
     law.clauses = {}
-    for i, elem in ipairs(gui.clauses_frame.clauses.children) do
+    for i, elem in pairs(gui.clauses_frame.clauses.children) do
         local clause = SaveClause(elem, law, {
             base_clause = (i == 1)
         })
@@ -498,7 +498,7 @@ function SaveLaw(gui)
         end
     end
     law.effects = {}
-    for i, elem in ipairs(gui.effects_frame.effects.children) do
+    for i, elem in pairs(gui.effects_frame.effects.children) do
         local effect = {
             base_effect = (i == 1)
         }
@@ -506,7 +506,7 @@ function SaveLaw(gui)
     end
     if gui.buttons.linked_law.selected_index > 1 then
         local options = {0}
-        for _, law in ipairs(global.laws) do
+        for _, law in pairs(global.laws) do
             if not law.passed and not law.hidden then
                 table.insert(options, law.index)
             end
@@ -603,11 +603,11 @@ end
 
 function LawMatch(type, target, force, player)
     local matched_laws = {}
-    for _, law in ipairs(global.laws) do
+    for _, law in pairs(global.laws) do
         if law.passed then
             law.inverse_effects = false
             local results = {}
-            for _, clause in ipairs(law.clauses) do
+            for _, clause in pairs(law.clauses) do
                 local result = ClauseMatch(law, clause, type, target, force, player)
                 table.insert(results, {
                     success = result,
@@ -803,7 +803,7 @@ function CalculateWithOperation(value_1, value_2, operation)
 end
 
 function ExecuteLaws(laws, event)
-    for i, law in ipairs(laws) do
+    for i, law in pairs(laws) do
         local clause = law.clauses[1]
         
         -- Apply offense count
@@ -818,7 +818,7 @@ function ExecuteLaws(laws, event)
             end
         end
 
-        for i, effect in ipairs(law.effects) do
+        for i, effect in pairs(law.effects) do
             if event.all_players then
                 for _, player in pairs(game.players) do
                     ExecuteEffect(law, effect, {
@@ -836,9 +836,9 @@ end
 function ExecuteEffect(law, effect, event)
     local force = event.force
     local player = Event.get_player(event)
-    local offence_count = law.offenses[event.player_index]
+    local offence_count = law.offenses[event.player_index] -- TODO: fix
     local value = effect.effect_value
-    if value~= nil and effect.effect_value_type == VALUE_TYPE_PERCENTAGE then
+    if value ~= nil and effect.effect_value_type == VALUE_TYPE_PERCENTAGE then
         value = CalculatePercentageValue(
             value,
             effect.effect_value_percentage_type,
@@ -890,7 +890,7 @@ function ExecuteEffect(law, effect, event)
             Player.set_data(player, {
                 remove_item = event.item_stack
             })
-            for _, ingredient in ipairs(event.recipe.ingredients) do
+            for _, ingredient in pairs(event.recipe.ingredients) do
                 player.insert{name = ingredient.name, count = ingredient.amount}
             end
         elseif event.research then
@@ -998,7 +998,7 @@ function PassLaw(law)
     ExecuteLaws(matched_laws, {
         all_players = true
     })
-    for _, other_law in ipairs(global.laws) do
+    for _, other_law in pairs(global.laws) do
         if other_law.linked_law == law.index then
             PassLaw(other_law)
         end
@@ -1009,7 +1009,7 @@ function RevokeLaw(law)
     law.passed = false
     law.hidden = true
     game.print({"lawful-evil.messages.law-is-revoked", law.title})
-    for _, other_law in ipairs(global.laws) do
+    for _, other_law in pairs(global.laws) do
         if other_law.linked_law == law.index then
             RevokeLaw(other_law)
         end
@@ -1111,7 +1111,7 @@ end
 
 function GetClauseIndexByID(clause_type_id, clause_types)
     if clause_type_id ~= nil then
-        for i, id in ipairs(clause_types) do
+        for i, id in pairs(clause_types) do
             if id == clause_type_id then
                 return i
             end
@@ -1147,7 +1147,7 @@ function CreateLawfulEvilGUI(player)
 
     local passed_laws = {}
     local proposed_laws = {}
-    for i, law in ipairs(global.laws) do
+    for i, law in pairs(global.laws) do
         law.index = i
         if law.passed and not law.hidden then
             table.insert(passed_laws, law)
@@ -1174,7 +1174,7 @@ function CreateLawfulEvilGUI(player)
             caption = {"size.none"}
         }
     end
-    for i, law in ipairs(passed_laws) do
+    for i, law in pairs(passed_laws) do
         local law_frame = passed_laws_scroll.add{
             type = "frame",
             direction = "vertical",
@@ -1218,7 +1218,7 @@ function CreateLawfulEvilGUI(player)
             caption = {"size.none"}
         }
     end
-    for i, law in ipairs(proposed_laws) do
+    for i, law in pairs(proposed_laws) do
         local law_frame = laws_scroll.add{
             type = "frame",
             direction = "vertical",
@@ -1243,7 +1243,7 @@ function CreateLawfulEvilGUI(player)
             name = "vote_law_" .. law.index,
             caption = {"view"}
         }
-        local voting_ticks_left = law.vote_end_tick - game.tick
+        local voting_mins_left = math.ceil((law.vote_end_tick - game.tick) / 3600)
         local meta_flow = law_frame.add{
             type = "flow",
             name = "meta_flow",
@@ -1254,8 +1254,8 @@ function CreateLawfulEvilGUI(player)
         if not law.linked_law then
             meta_flow.add{
                 type = "label",
-                name = "ticks_left",
-                caption = {"lawful-evil.gui.voting-ticks-left", voting_ticks_left},
+                name = "mins_left",
+                caption = {"lawful-evil.gui.voting-mins-left", voting_mins_left},
                 style = "description_value_label"
             }
         else
@@ -1354,10 +1354,10 @@ function CreateLawGUI(event)
     effects_gui.style.minimal_width = clauses_frame.style.minimal_width
     effects_gui.style.maximal_height = 200
 
-    for i, clause in ipairs(law.clauses) do
+    for i, clause in pairs(law.clauses) do
         CreateClauseGUI(clauses_gui, clause, read_only)
     end
-    for i, effect in ipairs(law.effects) do
+    for i, effect in pairs(law.effects) do
         CreateEffectGUI(effects_gui, effect, read_only)
     end
 
@@ -1384,7 +1384,7 @@ function CreateLawGUI(event)
         local options = {"none"}
         local options_indexed = {}
         local i = 2
-        for _, law in ipairs(global.laws) do
+        for _, law in pairs(global.laws) do
             if not law.passed and not law.hidden then
                 table.insert(options, law.title)
                 options_indexed[law.index] = i
@@ -1483,8 +1483,8 @@ function CreateClauseGUI(parent, clause, read_only)
     local clause_types = GetClauseTypes(clause.logic_type)
     local selected_clause_type_index = GetClauseIndexByID(clause.when_type, clause_types)
     local clause_type_drop_down_options = {}
-    for i, type in ipairs(clause_types) do
-        clause_type_drop_down_options[i] = {"lawful-evil.clause-type."..type}
+    for i, type in pairs(clause_types) do
+        clause_type_drop_down_options[i] = {"lawful-evil.clause-type." .. type}
     end
     CreateDropDown{
         parent = gui,
