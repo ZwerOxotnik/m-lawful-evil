@@ -193,10 +193,10 @@ script.on_nth_tick(60, function(event)
         if not law.passed and not law.hidden and not law.linked_law and game.tick >= law.vote_end_tick then
             local votes = GetLawVotes(law)
             if votes.ayes > votes.noes then
-                game.print("Law " .. law.title .. " was passed with " .. votes.ayes .. " ayes against " .. votes.noes .. " noes.")
+                game.print({"lawful-evil.messages.law-is-passed", law.title, votes.ayes, votes.noes})
                 PassLaw(law)
             else
-                game.print("Law " .. law.title .. " was has not passed with " .. votes.noes .. " noes against " .. votes.ayes .. " ayes.")
+                game.print({"lawful-evil.messages.law-is-not-passed", law.title, votes.ayes, votes.noes})
                 RevokeLaw(law)
             end
         end
@@ -909,9 +909,9 @@ function ExecuteEffect(law, effect, event)
     elseif effect.effect_type == EFFECT_TYPE_ALERT then
         local msg = effect.effect_text or ""
         if player then
-            game.print(player.name .. " triggered a law: " .. msg)
+            game.print({"lawful-evil.messages.player-triggered-a-law", player.name, msg})
         elseif force then
-            game.print(force.name .. " force triggered a law: " .. msg)
+            game.print({"lawful-evil.messages.force-triggered-a-law", force.name, msg})
         end
     elseif effect.effect_type == EFFECT_TYPE_KILL then
         if player then
@@ -1008,7 +1008,7 @@ end
 function RevokeLaw(law)
     law.passed = false
     law.hidden = true
-    game.print(law.title .. " has been revoked.")
+    game.print({"lawful-evil.messages.law-is-revoked", law.title})
     for _, other_law in ipairs(global.laws) do
         if other_law.linked_law == law.index then
             RevokeLaw(other_law)
@@ -1141,7 +1141,7 @@ function CreateLawfulEvilGUI(player)
     local gui = player.gui.center.add{
         type = "frame",
         name = "lawful_evil_gui",
-        caption = "Lawful Evil",
+        caption = {"mod-name.lawful-evil"},
         direction = "vertical"
     }
 
@@ -1158,7 +1158,7 @@ function CreateLawfulEvilGUI(player)
 
     gui.add{
         type = "label",
-        caption = "Passed Laws",
+        caption = {"lawful-evil.gui.passed-laws"},
         style = "large_caption_label"
     }
     local passed_laws_scroll = gui.add{
@@ -1171,7 +1171,7 @@ function CreateLawfulEvilGUI(player)
     if #passed_laws == 0 then
         passed_laws_scroll.add{
             type = "label",
-            caption = "none"
+            caption = {"size.none"}
         }
     end
     for i, law in ipairs(passed_laws) do
@@ -1197,12 +1197,12 @@ function CreateLawfulEvilGUI(player)
         flow1.add{
             type = "button",
             name = "view_law_" .. law.index,
-            caption = "View"
+            caption = {"view"}
         }
     end
     gui.add{
         type = "label",
-        caption = "Proposed Laws",
+        caption = {"lawful-evil.gui.proposed-laws"},
         style = "large_caption_label"
     }
     local laws_scroll = gui.add{
@@ -1215,7 +1215,7 @@ function CreateLawfulEvilGUI(player)
     if #proposed_laws == 0 then
         laws_scroll.add{
             type = "label",
-            caption = "none"
+            caption = {"size.none"}
         }
     end
     for i, law in ipairs(proposed_laws) do
@@ -1241,7 +1241,7 @@ function CreateLawfulEvilGUI(player)
         flow1.add{
             type = "button",
             name = "vote_law_" .. law.index,
-            caption = "View"
+            caption = {"view"}
         }
         local voting_ticks_left = law.vote_end_tick - game.tick
         local meta_flow = law_frame.add{
@@ -1255,13 +1255,13 @@ function CreateLawfulEvilGUI(player)
             meta_flow.add{
                 type = "label",
                 name = "ticks_left",
-                caption = voting_ticks_left .. " ticks left until vote",
+                caption = {"lawful-evil.gui.voting-ticks-left", voting_ticks_left},
                 style = "description_value_label"
             }
         else
             meta_flow.add{
                 type = "label",
-                caption = "linked to " .. global.laws[law.linked_law].title,
+                caption = {"lawful-evil.gui.linked-to", global.laws[law.linked_law].title},
                 style = "description_value_label"
             }
         end
@@ -1275,13 +1275,13 @@ function CreateLawfulEvilGUI(player)
             local ayes = meta_flow.add{
                 type = "label",
                 name = "yay_votes",
-                caption = votes.ayes .. " ayes"
+                caption = {"lawful-evil.gui.n-ayes", votes.ayes}
             }
             ayes.style.font_color = {g=1}
             local noes = meta_flow.add{
                 type = "label",
                 name = "noes_votes",
-                caption = votes.noes .. " noes"
+                caption = {"lawful-evil.gui.n-noes", votes.noes}
             }
             noes.style.font_color = {r=1}
         end
@@ -1294,13 +1294,13 @@ function CreateLawfulEvilGUI(player)
     local propose_law_button = bottom_buttons_flow.add{
         type = "button",
         name = "propose_law",
-        caption = "Propose New Law"
+        caption = {"lawful-evil.gui.propose-new-law"}
     }
     propose_law_button.style.horizontally_stretchable = true
     bottom_buttons_flow.add{
         type = "button",
         name = "close_lawful_gui",
-        caption = "Close"
+        caption = {"gui.close"}
     }
 end
 
@@ -1370,16 +1370,16 @@ function CreateLawGUI(event)
         buttons.add{
             type = "button",
             name = "add_clause",
-            caption = "Add Clause"
+            caption = {"lawful-evil.gui.add-clause"}
         }
         buttons.add{
             type = "button",
             name = "add_effect",
-            caption = "Add Effect"
+            caption = {"lawful-evil.gui.add-effect"}
         }
         buttons.add{
             type = "label",
-            caption = "Link with:"
+            caption = {"lawful-evil.gui.link-with"}
         }
         local options = {"none"}
         local options_indexed = {}
@@ -1400,7 +1400,7 @@ function CreateLawGUI(event)
         buttons.add{
             type = "button",
             name = "submit_law",
-            caption = "Submit"
+            caption = {"submit"}
         }
     elseif event.can_vote and law.votes[player.name] == nil then
         if law.linked_law then
@@ -1417,25 +1417,25 @@ function CreateLawGUI(event)
             buttons.add{
                 type = "button",
                 name = "vote_law_aye_" .. law.index,
-                caption = "Vote Aye"
+                caption = {"lawful-evil.gui.vote-aye"}
             }
             buttons.add{
                 type = "button",
                 name = "vote_law_nay_" .. law.index,
-                caption = "Vote Nay"
+                caption = {"lawful-evil.gui.vote-nay"}
             }
         end
     end
     buttons.add{
         type = "button",
         name = "close_law",
-        caption = "Close"
+        caption = {"gui.close"}
     }
     if not event.can_vote and read_only then
         if law.linked_law then
             buttons.add{
                 type = "label",
-                caption = "Linked law:"
+                caption = {"lawful-evil.gui.linked-law"}
             }
             buttons.add{
                 type = "button",
@@ -1447,7 +1447,7 @@ function CreateLawGUI(event)
             buttons.add{
                 type = "button",
                 name = "revoke_law_" .. law.index,
-                caption = "Vote to Revoke"
+                caption = {"lawful-evil.gui.vote-to-revoke"}
             }
             local votes = GetLawVotes(law)
             local revoke_votes = GetLawRevokeVotes(law)
@@ -1468,7 +1468,7 @@ function CreateClauseGUI(parent, clause, read_only)
     if clause.base_clause then
         gui.add{
             type = "label",
-            caption = "When"
+            caption = {"when"}
         }
         clause.logic_type = LOGIC_TYPE_BASE
     else
@@ -1484,7 +1484,7 @@ function CreateClauseGUI(parent, clause, read_only)
     local selected_clause_type_index = GetClauseIndexByID(clause.when_type, clause_types)
     local clause_type_drop_down_options = {}
     for i, type in ipairs(clause_types) do
-        clause_type_drop_down_options[i] = {"clause-type."..type}
+        clause_type_drop_down_options[i] = {"lawful-evil.clause-type."..type}
     end
     CreateDropDown{
         parent = gui,
@@ -1547,7 +1547,7 @@ function CreateClauseGUI(parent, clause, read_only)
         if elem_type == "entity" then
             gui.add{
                 type = "label",
-                caption = "include similar types"
+                caption = {"lawful-evil.gui.include-similar-types"}
             }
             if clause.when_entity_similar_type == nil then
                 clause.when_entity_similar_type = false
@@ -1578,7 +1578,7 @@ function CreateEffectGUI(parent, effect, read_only)
     gui.style.height = 32
     local main_label = gui.add{
         type = "label",
-        caption = "Then"
+        caption = {"then"}
     }
     CreateDropDown{
         parent = gui,
@@ -1629,7 +1629,7 @@ function CreateEffectGUI(parent, effect, read_only)
             else
                 gui.add{
                     type = "label",
-                    caption = "Requires Multiplayer Trading mod."
+                    caption = {"lawful-evilgui.requires-multiplayer-trading-mod"}
                 }
             end
         end
@@ -1662,7 +1662,7 @@ function CreateEffectGUI(parent, effect, read_only)
             else
                 gui.add{
                     type = "label",
-                    caption = "Requires Multiplayer Trading mod."
+                    caption = {"lawful-evilgui.requires-multiplayer-trading-mod"}
                 }
             end
         end

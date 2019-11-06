@@ -191,6 +191,12 @@ EFFECT_FINE_TYPE_ITEMS = {
     "item",
     "money"
 }
+-- TODO: Check it
+-- EFFECT_FINE_TYPE_ITEMS = {
+--     {"player-inventory"},
+--     {"item"},
+--     {"money"}
+-- }
 EFFECT_FINE_TYPE_INVENTORY = 1
 EFFECT_FINE_TYPE_ITEM = 2
 EFFECT_FINE_TYPE_MONEY = 3
