@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.5
+Date: 06. 11. 2019
+  Bugfixes:
+    - Fixed lost button in saves without the mod
+  Changes:
+    - Refactoring
+  Notes:
+    - This update for Factorio 0.17 and updated by ZwerOxotnik
+    - I need much more tests etc
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.4
 Date: 06. 11. 2019
   Bugfixes:
