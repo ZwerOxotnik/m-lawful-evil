@@ -145,19 +145,19 @@ ELEM_ITEM = 2
 ELEM_FLUID = 3
 
 EFFECT_TYPE_ITEMS = {
-    "fine", 
-    "reward", 
-    "alert", 
-    "disallow*",
-    "license",
-    "death penalty",
-    "kick from server",
-    "ban from server",
-    "mute player",
-    "unmute player",
-    "if fine fails,",
-    "if nth offence,",
-    "reset offence count"
+    {"lawful-evil.effect_type.fine"},
+    {"lawful-evil.effect_type.reward"},
+    {"lawful-evil.effect_type.alert"},
+    {"lawful-evil.effect_type.disallow"},
+    {"lawful-evil.effect_type.license"},
+    {"lawful-evil.effect_type.death-penalty"},
+    {"lawful-evil.effect_type.kick-from-server"},
+    {"lawful-evil.effect_type.ban-from-server"},
+    {"lawful-evil.effect_type.mute-player"},
+    {"lawful-evil.effect_type.unmute-player"},
+    {"lawful-evil.effect_type.if-fine-fails"},
+    {"lawful-evil.effect_type.if-nth-offence"},
+    {"lawful-evil.effect_type.reset-offence-count"}
 }
 EFFECT_TYPE_FINE = 1
 EFFECT_TYPE_REWARD = 2
@@ -174,11 +174,11 @@ EFFECT_TYPE_NTH_OFFENCE = 12
 EFFECT_TYPE_RESET_OFFENCE = 13
 
 EFFECT_LICENSE_TYPE_ITEMS = {
-    "car license",
-    "tank license",
-    "train license",
-    "gun license",
-    "artillery license"
+    {"lawful-evil.effect_license_type.car-license"},
+    {"lawful-evil.effect_license_type.tank-license"},
+    {"lawful-evil.effect_license_type.train-license"},
+    {"lawful-evil.effect_license_type.gun-license"},
+    {"lawful-evil.effect_license_type.artillery-license"}
 }
 EFFECT_LICENSE_TYPE_CAR = 1
 EFFECT_LICENSE_TYPE_TANK = 2
@@ -187,23 +187,17 @@ EFFECT_LICENSE_TYPE_GUN = 4
 EFFECT_LICENSE_TYPE_ARTILLERY = 5
 
 EFFECT_FINE_TYPE_ITEMS = {
-    "player inventory",
-    "item",
-    "money"
+    {"player-inventory"},
+    {"item"},
+    {"money"}
 }
--- TODO: Check it
--- EFFECT_FINE_TYPE_ITEMS = {
---     {"player-inventory"},
---     {"item"},
---     {"money"}
--- }
 EFFECT_FINE_TYPE_INVENTORY = 1
 EFFECT_FINE_TYPE_ITEM = 2
 EFFECT_FINE_TYPE_MONEY = 3
 
 EFFECT_REWARD_TYPE_ITEMS = {
-    "item",
-    "money"
+    {"item"},
+    {"money"}
 }
 EFFECT_REWARD_TYPE_ITEM = 1
 EFFECT_REWARD_TYPE_MONEY = 2
