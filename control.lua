@@ -6,11 +6,14 @@ require 'mpt'
 require 'mod-defines'
 
 -- TODO: add admin mode and then extend the mode
+-- TODO: make several tables for laws
+
 local module = {}
 module.self_events = require 'self_events'
 
 script.on_init(function()
     global.laws = {}
+    global.last_id = 0
     local example_law = GetNewLaw(nil)
     example_law.title = "Example Law"
     example_law.description = "This law is an example"
@@ -207,10 +210,9 @@ script.on_nth_tick(3, function(event)
     end
 end)
 
-local function CheckLaws()
-    -- Check Laws.
+local function CheckVotes()
     for _, law in pairs(global.laws) do
-        if not law.passed and not law.hidden and not law.linked_law and game.tick >= law.vote_end_tick then
+        if not law.passed and not law.linked_law and game.tick >= law.vote_end_tick then
             local votes = GetLawVotes(law)
             if votes.ayes > votes.noes then
                 game.print({"lawful-evil.messages.law-is-passed", law.title, votes.ayes, votes.noes})
@@ -264,7 +266,7 @@ local function CheckProductionRates()
 end
 
 script.on_nth_tick(3600, function(event)
-    CheckLaws()
+    CheckVotes()
     CheckProductionRates()
 end)
 
@@ -351,8 +353,8 @@ Gui.on_click("vote_law_([0-9]+)", function(event)
             law_gui.destroy()
         end
     end
-    local law_index = tonumber(event.match)
-    local law = GetLaw(law_index)
+    local law_id = tonumber(event.match)
+    local law = GetLaw(law_id)
     if law then
         CreateLawGUI({
             player = player,
@@ -374,8 +376,8 @@ Gui.on_click("view_law_([0-9]+)", function(event)
             law_gui.destroy()
         end
     end
-    local law_index = tonumber(event.match)
-    local law = GetLaw(law_index)
+    local law_id = tonumber(event.match)
+    local law = GetLaw(law_id)
     if law then
         CreateLawGUI({
             player = player,
@@ -464,7 +466,9 @@ function IsDaytime()
 end
 
 function GetNewLaw(player)
+    global.last_id = global.last_id + 1
     return {
+        id = global.last_id,
         title = "Title...",
         description = "State your intent...",
         creator = player and player.name or "?",
@@ -491,6 +495,14 @@ end
 
 function GetLaw(index)
     return global.laws[index]
+end
+
+function GetLawById(id)
+    for _, law in pairs(global.laws) do
+        if law.id == id then
+            return law
+        end
+    end
 end
 
 function CreateSubClause()
@@ -534,8 +546,8 @@ function SaveLaw(gui)
     if gui.buttons.linked_law.selected_index > 1 then
         local options = {0}
         for _, law in pairs(global.laws) do
-            if not law.passed and not law.hidden then
-                table.insert(options, law.index)
+            if not law.passed then
+                table.insert(options, law.id)
             end
         end
         -- TODO: add extra time to the laws because the law changed
@@ -669,7 +681,7 @@ end
 
 function ClauseMatch(law, clause, type, target, force, player)
     if clause.when_type == WHEN_THIS_LAW_PASSED and clause.base_clause then
-        return law.index == target
+        return law.id == target
     elseif clause.when_type == WHEN_DAY then
         return IsDaytime()
     elseif clause.when_type == WHEN_NIGHT then
@@ -1022,27 +1034,30 @@ end
 
 function PassLaw(law)
     law.passed = true
-    local matched_laws = LawMatch(WHEN_THIS_LAW_PASSED, law.index, nil, nil)
-    script.raise_event(module.self_events.on_passed_law, {law_index = law.index})
+    local matched_laws = LawMatch(WHEN_THIS_LAW_PASSED, law.id, nil, nil)
+    script.raise_event(module.self_events.on_passed_law, {law_id = law.id})
     ExecuteLaws(matched_laws, {
         all_players = true
     })
     for _, other_law in pairs(global.laws) do
-        if not other_law.passed and other_law.linked_law == law.index then
+        if not other_law.passed and other_law.linked_law == law.id then
             PassLaw(other_law)
         end
     end
 end
 
 function RevokeLaw(law)
-    law.passed = false
-    law.hidden = true
-    script.raise_event(module.self_events.on_pre_revoke_law, {law_index = law.index})
     game.print({"lawful-evil.messages.law-is-revoked", law.title})
-    for _, other_law in pairs(global.laws) do
-        if not other_law.hidden and other_law.linked_law == law.index then
+    script.raise_event(module.self_events.on_pre_revoke_law, {law_id = law.id})
+    for i, other_law in pairs(global.laws) do
+        if other_law.linked_law == law.id then
             RevokeLaw(other_law)
+            table.remove(global.laws, i)
         end
+    end
+
+    if law.index then
+        table.remove(global.laws, law.index)
     end
 end
 
@@ -1171,9 +1186,9 @@ function CreateLawfulEvilGUI(player)
     local proposed_laws = {}
     for i, law in pairs(global.laws) do
         law.index = i
-        if law.passed and not law.hidden then
+        if law.passed then
             table.insert(passed_laws, law)
-        elseif not law.passed and not law.hidden then
+        else
             table.insert(proposed_laws, law)
         end
     end
@@ -1287,7 +1302,7 @@ function CreateLawfulEvilGUI(player)
         else
             meta_flow.add{
                 type = "label",
-                caption = {"lawful-evil.gui.linked-to", global.laws[law.linked_law].title},
+                caption = {"lawful-evil.gui.linked-to", GetLawById(law.linked_law).title},
                 style = "description_value_label"
             }
         end
@@ -1411,7 +1426,7 @@ function CreateLawGUI(event)
         local options_indexed = {}
         local i = 2
         for _, law in pairs(global.laws) do
-            if not law.passed and not law.hidden then
+            if not law.passed then
                 table.insert(options, law.title)
                 options_indexed[law.index] = i
                 i = i + 1
@@ -1430,14 +1445,15 @@ function CreateLawGUI(event)
         }
     elseif event.can_vote and law.votes[player.name] == nil then
         if law.linked_law then
+            local target_law = GetLawById(law.linked_law)
             buttons.add{
                 type = "label",
                 caption = {"lawful-evil.gui.double_link"}
             }
             buttons.add{
                 type = "button",
-                name = "vote_law_" .. law.linked_law,
-                caption = global.laws[law.linked_law].title
+                name = "vote_law_" .. target_law.index,
+                caption = target_law.title
             }
         else
             buttons.add{
@@ -1459,14 +1475,15 @@ function CreateLawGUI(event)
     }
     if not event.can_vote and read_only then
         if law.linked_law then
+            local target_law = GetLawById(law.linked_law)
             buttons.add{
                 type = "label",
                 caption = {"lawful-evil.gui.linked-law"}
             }
             buttons.add{
                 type = "button",
-                name = "view_law_" .. law.linked_law,
-                caption = global.laws[law.linked_law].title
+                name = "view_law_" .. target_law.index,
+                caption = target_law.title
             }
         end
         if law.revoke_votes[player.name] == nil and not law.linked_law then
@@ -1809,17 +1826,17 @@ remote.add_interface('lawful-evil', {
     get_event_name = function(name)
 		return module.self_events[name]
     end,
-    get_law_by_index = function(law_index)
+    get_law_by_id = function(target_id)
         for _, law in pairs(global.laws) do
-            if law.index == law_index then
+            if law.id == target_id then
                 return law
             end
         end
         return nil
     end,
-    GetNewLaw = GetNewLaw,
+    get_new_law = GetNewLaw,
     InsertNewLaw = function(new_law)
         table.insert(global.laws, new_law)
     end,
-    RevokeLaw = RevokeLaw
+    revoke_law = RevokeLaw
 })

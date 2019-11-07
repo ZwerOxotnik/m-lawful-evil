@@ -202,33 +202,40 @@ EFFECT_REWARD_TYPE_ITEMS = {
 EFFECT_REWARD_TYPE_ITEM = 1
 EFFECT_REWARD_TYPE_MONEY = 2
 
-VALUE_TYPE_ITEMS = {"percent of", "fixed amount"}
+VALUE_TYPE_ITEMS = {
+    {"lawful-evil.gui.percent-of"},
+    {"lawful-evil.gui.fixed-amount"}
+}
 VALUE_TYPE_PERCENTAGE = 1
 VALUE_TYPE_FIXED = 2
 
-OPERATION_TYPE_ITEMS = {"equals", "not equal", "greater than", "less than"}
+OPERATION_TYPE_ITEMS = {"==", "!=", ">", "<"}
 OPERATION_TYPE_EQUAL = 1
 OPERATION_TYPE_NOT_EQUAL = 2
 OPERATION_TYPE_GREATER_THAN = 3
 OPERATION_TYPE_LESS_THAN = 4
 
 PERCENTAGE_TYPE_ITEMS = {
-    "players", "force's players", 
-    "balance", 
-    "evolution factor", 
-    "rockets launched", 
-    "total production", "production per min", 
-    "total consumption", "consumption per min",
-    "technologies researched",
-    "trains", "force's trains",
-    "construction robots",
-    "force's construction robots",
-    "logistic robots",
-    "force's logistic robots",
-    "player's time online",
-    "player's afk time",
-    "game tick",
-    "time of day"
+    {"lawful-evil.percentage-type-items.players"},
+    {"lawful-evil.percentage-type-items.forces-players"},
+    {"lawful-evil.percentage-type-items.balance"},
+    {"lawful-evil.percentage-type-items.evolution-factor"},
+    {"lawful-evil.percentage-type-items.rockets-launched"},
+    {"lawful-evil.percentage-type-items.total-production"},
+    {"lawful-evil.percentage-type-items.production-per-min"},
+    {"lawful-evil.percentage-type-items.total-consumption"},
+    {"lawful-evil.percentage-type-items.consumption-per-min"},
+    {"lawful-evil.percentage-type-items.technologies-researched"},
+    {"lawful-evil.percentage-type-items.trains"},
+    {"lawful-evil.percentage-type-items.forces-trains"},
+    {"lawful-evil.percentage-type-items.construction-robots"},
+    {"lawful-evil.percentage-type-items.forces-construction-robots"},
+    {"lawful-evil.percentage-type-items.logistic-robots"},
+    {"lawful-evil.percentage-type-items.forces-logistic-robots"},
+    {"lawful-evil.percentage-type-items.players-time-online"},
+    {"lawful-evil.percentage-type-items.players-afk-time"},
+    {"lawful-evil.percentage-type-items.game-tick"},
+    {"lawful-evil.percentage-type-items.time-of-day"}
 }
 PERCENTAGE_TYPE_PLAYER_COUNT = 1
 PERCENTAGE_TYPE_FORCE_PLAYER_COUNT = 2

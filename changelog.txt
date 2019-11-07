@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.10
+Date: 07. 11. 2019
+  Changes:
+    - Updated mod description
+    - Improved localization
+    - Each law has id
+    - Refactoring
+    - Optimization
+    - The mod doesn't store revoked laws!
+    - Changed functions of the mod interface
+  Notes:
+    - This update for Factorio 0.17 and updated by ZwerOxotnik
+    - I need much more tests etc
+---------------------------------------------------------------------------------------------------
 Version: 0.3.9
 Date: 07. 11. 2019
   Features:
