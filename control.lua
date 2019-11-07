@@ -1425,7 +1425,7 @@ function CreateLawGUI(event)
         if law.linked_law then
             buttons.add{
                 type = "label",
-                caption = "This is linked to another law:"
+                caption = {"lawful-evil.gui.double_link"}
             }
             buttons.add{
                 type = "button",
@@ -1518,12 +1518,12 @@ function CreateClauseGUI(parent, clause, read_only)
         if clause.base_clause then
             gui.add{
                 type = "label",
-                caption = "effects apply to all players"
+                caption = {"lawful-evil.gui.when_has_base_clause"}
             }
         else
             gui.add{
                 type = "label",
-                caption = "cannot be used as a sub-clause"
+                caption = {"lawful-evil.gui.when_has_not_base_clause"}
             }
         end
     elseif when_type == WHEN_VALUE then
@@ -1610,7 +1610,7 @@ function CreateEffectGUI(parent, effect, read_only)
     if effect.effect_type == EFFECT_TYPE_DISALLOW then
         gui.add{
             type = "label",
-            caption = {"lawful-evil.messages.EFFECT_TYPE_DISALLOW"}
+            caption = {"lawful-evil.gui.disallow-description"}
         }
     elseif effect.effect_type == EFFECT_TYPE_ALERT then
         gui.add{
@@ -1695,7 +1695,7 @@ function CreateEffectGUI(parent, effect, read_only)
         }
         gui.add{
             type = "label",
-            caption = "Allow:"
+            caption = {"", {"lawful-evil.gui.allow"}, {"colon"}}
         }
         if effect.effect_license_state == nil then
             effect.effect_license_state = false
@@ -1709,7 +1709,7 @@ function CreateEffectGUI(parent, effect, read_only)
     elseif effect.effect_type == EFFECT_TYPE_FINE_FAIL then
         gui.add{
             type = "label",
-            caption = "Following Effects only apply if a fine has failed."
+            caption = {"lawful-evil.gui.fine-fail-description"}
         }
     elseif effect.effect_type == EFFECT_TYPE_NTH_OFFENCE then
         gui.add{
@@ -1720,7 +1720,7 @@ function CreateEffectGUI(parent, effect, read_only)
     elseif effect.effect_type == EFFECT_TYPE_RESET_OFFENCE then
         gui.add{
             type = "label",
-            caption = "Sets player's offence record to 0"
+            caption = {"lawful-evil.gui.reset-offence-description"}
         }
     end
     if not effect.base_effect and not read_only then
@@ -1770,7 +1770,7 @@ function CreateValueFields(gui, clause, prefix, read_only)
         if pct_type == PERCENTAGE_TYPE_BALANCE and not MultiplayerTrading.is_loaded() then
             local missing = gui.add{
                 type = "label",
-                caption = "Missing multiplayer-trading."
+                caption = {"lawful-evil.multiplayer-trading.missing"}
             }
             missing.style.font_color = {r = 1}
         elseif pct_type == PERCENTAGE_TYPE_TOTAL_PRODUCTION 
