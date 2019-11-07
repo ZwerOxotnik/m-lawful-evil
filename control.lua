@@ -462,7 +462,7 @@ function CreateNewLaw(player)
     return {
         title = "Title...",
         description = "State your intent...",
-        creator = player and player.name or "no-one",
+        creator = player and player.name or "?",
         passed = false,
         votes = {},
         vote_end_tick = game.tick + settings.global['voting-duration'].value * 60 * 60,
@@ -1282,7 +1282,7 @@ function CreateLawfulEvilGUI(player)
         end
         meta_flow.add{
             type = "label",
-            caption = "created by " .. (law.creator or "no-one"),
+            caption = {"lawful-evil.gui.created-by", law.creator or "?"},
             style = "menu_message"
         }
         if not law.linked_law then
