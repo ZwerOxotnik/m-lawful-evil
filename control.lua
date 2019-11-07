@@ -5,9 +5,13 @@ require 'stdlib/game'
 require 'mpt'
 require 'mod-defines'
 
+-- TODO: add admin mode and then extend the mode
+local module = {}
+module.self_events = require 'self_events'
+
 script.on_init(function()
     global.laws = {}
-    local example_law = CreateNewLaw(nil)
+    local example_law = GetNewLaw(nil)
     example_law.title = "Example Law"
     example_law.description = "This law is an example"
     example_law.clauses[1] =  {
@@ -222,6 +226,7 @@ local function CheckLaws()
     RefreshAllLawfulEvilGui()
 end
 
+ -- For specilizations
 local function CheckProductionRates()
     if not global.production_rates then
         global.production_rates = {}
@@ -294,7 +299,7 @@ Gui.on_click("propose_law", function(event)
     end
     CreateLawGUI({
         player = player,
-        law = CreateNewLaw(player),
+        law = GetNewLaw(player),
         read_only = false,
         can_vote = false
     })
@@ -458,7 +463,7 @@ function IsDaytime()
     return not (surface.daytime > surface.evening and surface.daytime < surface.morning)
 end
 
-function CreateNewLaw(player)
+function GetNewLaw(player)
     return {
         title = "Title...",
         description = "State your intent...",
@@ -503,7 +508,7 @@ end
 
 function SaveLaw(gui)
     local player = game.players[gui.player_index]
-    local law = CreateNewLaw(player)
+    local law = GetNewLaw(player)
     if gui.law_title then
         law.title = gui.law_title.text
     end
@@ -1018,11 +1023,12 @@ end
 function PassLaw(law)
     law.passed = true
     local matched_laws = LawMatch(WHEN_THIS_LAW_PASSED, law.index, nil, nil)
+    script.raise_event(module.self_events.on_passed_law, {law_index = law.index})
     ExecuteLaws(matched_laws, {
         all_players = true
     })
     for _, other_law in pairs(global.laws) do
-        if other_law.linked_law == law.index then
+        if not other_law.passed and other_law.linked_law == law.index then
             PassLaw(other_law)
         end
     end
@@ -1031,6 +1037,7 @@ end
 function RevokeLaw(law)
     law.passed = false
     law.hidden = true
+    script.raise_event(module.self_events.on_pre_revoke_law, {law_index = law.index})
     game.print({"lawful-evil.messages.law-is-revoked", law.title})
     for _, other_law in pairs(global.laws) do
         if not other_law.hidden and other_law.linked_law == law.index then
@@ -1796,3 +1803,23 @@ local function on_configuration_changed(event)
 end
 
 script.on_configuration_changed(on_configuration_changed)
+
+remote.remove_interface('lawful-evil')
+remote.add_interface('lawful-evil', {
+    get_event_name = function(name)
+		return module.self_events[name]
+    end,
+    get_law_by_index = function(law_index)
+        for _, law in pairs(global.laws) do
+            if law.index == law_index then
+                return law
+            end
+        end
+        return nil
+    end,
+    GetNewLaw = GetNewLaw,
+    InsertNewLaw = function(new_law)
+        table.insert(global.laws, new_law)
+    end,
+    RevokeLaw = RevokeLaw
+})

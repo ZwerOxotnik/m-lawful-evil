@@ -1,4 +1,21 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.9
+Date: 07. 11. 2019
+  Features:
+    - Added interface "lawful-evil" with functions "get_event_name", "get_law_by_index", "GetNewLaw", "InsertNewLaw", "RevokeLaw"
+    - Added custom events "on_pre_revoke_law", "on_passed_law"
+  Bugfixes:
+    - Fixed passing laws
+  Changes:
+    - Improved ru locale
+    - Updated mod description
+    - Changed dependencies
+    - Refactoring
+  Notes:
+    - This update for Factorio 0.17 and updated by ZwerOxotnik
+    - I need much more tests etc
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.8
 Date: 07. 11. 2019
   Changes:
