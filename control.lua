@@ -1057,7 +1057,7 @@ function RevokeLaw(law)
     end
 
     if law.index then
-        table.remove(global.laws, law.index)
+        table.remove(global.laws, GetLawById(law.id).index)
     end
 end
 
