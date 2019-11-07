@@ -1258,7 +1258,11 @@ function CreateLawfulEvilGUI(player)
             name = "vote_law_" .. law.index,
             caption = {"view"}
         }
-        local voting_mins_left = math.ceil((law.vote_end_tick - game.tick) / 3600)
+        local voting_mins_left = 1
+        local voting_ticks_left = law.vote_end_tick - game.tick
+        if voting_ticks_left > 3600 then
+            voting_mins_left = math.ceil((voting_ticks_left) / 3600)
+        end
         local meta_flow = law_frame.add{
             type = "flow",
             name = "meta_flow",
