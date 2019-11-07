@@ -533,6 +533,7 @@ function SaveLaw(gui)
                 table.insert(options, law.index)
             end
         end
+        -- TODO: add extra time to the laws because the law changed
         law.linked_law = options[gui.buttons.linked_law.selected_index]
     else
         law.linked_law = nil
