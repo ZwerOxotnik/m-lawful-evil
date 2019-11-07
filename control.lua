@@ -1031,12 +1031,11 @@ function RevokeLaw(law)
     law.passed = false
     law.hidden = true
     game.print({"lawful-evil.messages.law-is-revoked", law.title})
-    -- Why this is here???
-    -- for _, other_law in pairs(global.laws) do
-    --     if other_law.linked_law == law.index then
-    --         RevokeLaw(other_law)
-    --     end
-    -- end
+    for _, other_law in pairs(global.laws) do
+        if not other_law.hidden and other_law.linked_law == law.index then
+            RevokeLaw(other_law)
+        end
+    end
 end
 
 function RevokeVoteLaw(law, player, vote)
@@ -1286,7 +1285,7 @@ function CreateLawfulEvilGUI(player)
         end
         meta_flow.add{
             type = "label",
-            caption = {"lawful-evil.gui.created-by", law.creator or "?"},
+            caption = {"lawful-evil.gui.proposed-by", law.creator or "?"},
             style = "menu_message"
         }
         if not law.linked_law then
