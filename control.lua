@@ -1610,7 +1610,7 @@ function CreateEffectGUI(parent, effect, read_only)
     if effect.effect_type == EFFECT_TYPE_DISALLOW then
         gui.add{
             type = "label",
-            caption = "*only works for build, mine, craft and research events."
+            caption = {"lawful-evil.messages.EFFECT_TYPE_DISALLOW"}
         }
     elseif effect.effect_type == EFFECT_TYPE_ALERT then
         gui.add{
