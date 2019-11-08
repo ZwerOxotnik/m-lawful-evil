@@ -1375,7 +1375,7 @@ function CreateLawGUI(event)
     local gui = player.gui.center.add{
         type = "frame",
         name = "lawful_evil_law_gui",
-        caption = read_only and law.title or "Propose Law",
+        caption = read_only and law.title or {"lawful-evil.gui.propose-law"},
         direction = "vertical"
     }
     if not read_only then
