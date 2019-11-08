@@ -8,6 +8,7 @@ require 'mod-defines'
 -- TODO: add admin mode and then extend the mode
 -- TODO: make several tables for laws
 -- TODO: store last n laws in another variable for revoting by players
+-- TODO: filter picking of entity
 
 local module = {}
 module.self_events = require 'self_events'
@@ -898,7 +899,7 @@ function ExecuteEffect(law, effect, event)
     
     if effect.effect_type == EFFECT_TYPE_NTH_OFFENCE then
         event.stop_effects = (offence_count ~= effect.effect_nth_offence)
-        game.print(offence_count.." == "..effect.effect_nth_offence)
+        -- game.print(offence_count.." == "..effect.effect_nth_offence)
     end
 
     if event.stop_effects then
@@ -1765,7 +1766,10 @@ function CreateEffectGUI(parent, effect, read_only)
         gui.add{
             type = "textfield",
             name = "effect_nth_offence",
-            text = effect.effect_nth_offence and tostring(effect.effect_nth_offence) or 1
+            text = effect.effect_nth_offence and tostring(effect.effect_nth_offence) or 1,
+            numeric = true,
+            allow_decimal = false,
+            allow_negative = false
         }
     elseif effect.effect_type == EFFECT_TYPE_RESET_OFFENCE then
         gui.add{
