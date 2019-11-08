@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.13
+Date: 08. 11. 2019
+  Changes:
+    - Updated info
+  Notes:
+    - This update for Factorio 0.17 and updated by ZwerOxotnik
+    - I need much more tests etc
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.12
 Date: 08. 11. 2019
   Changes:

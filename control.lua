@@ -1193,7 +1193,7 @@ function CreateLawfulEvilGUI(player)
     local gui = player.gui.center.add{
         type = "frame",
         name = "lawful_evil_gui",
-        caption = {"mod-name.lawful-evil"},
+        caption = {"mod-name.m-lawful-evil"},
         direction = "vertical"
     }
 

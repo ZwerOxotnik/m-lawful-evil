@@ -1,9 +1,9 @@
 MultiplayerTrading = {
-    mod_id = "multiplayer-trading"
+    mod_id = "m-multiplayer-trading"
 }
 
 function MultiplayerTrading.is_loaded()
-    return game.active_mods["multiplayertrading"] ~= nil
+    return game.active_mods["m-multiplayertrading"] ~= nil
 end
 
 function MultiplayerTrading.add_to_balance(force, amount)
