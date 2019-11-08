@@ -7,6 +7,7 @@ require 'mod-defines'
 
 -- TODO: add admin mode and then extend the mode
 -- TODO: make several tables for laws
+-- TODO: store last n laws in another variable for revoting by players
 
 local module = {}
 module.self_events = require 'self_events'
@@ -522,10 +523,18 @@ function SaveLaw(gui)
     local player = game.players[gui.player_index]
     local law = GetNewLaw(player)
     if gui.law_title then
-        law.title = gui.law_title.text
+        if string.len(gui.law_title.text) > 38 then
+            law.title = string.sub(gui.law_title.text, 1, 38)
+        else
+            law.title = gui.law_title.text
+        end
     end
     if gui.law_description then
-        law.description = gui.law_description.text
+        if string.len(gui.law_description.text) > 310 then
+            law.description = string.sub(gui.law_description.text, 1, 310)
+        else
+            law.description = gui.law_description.text
+        end
     end
     law.clauses = {}
     for i, elem in pairs(gui.clauses_frame.clauses.children) do
@@ -1057,7 +1066,12 @@ function RevokeLaw(law)
     end
 
     if law.index then
-        table.remove(global.laws, GetLawById(law.id).index)
+        for i, target_law in pairs(global.laws) do
+            if target_law.id == law.id then
+                table.remove(global.laws, i)
+                return
+            end
+        end
     end
 end
 
@@ -1262,6 +1276,8 @@ function CreateLawfulEvilGUI(player)
             caption = law.title
         }
         law_frame.style.horizontally_stretchable = true
+        law_frame.style.vertically_stretchable = true
+        law_frame.style.maximal_height = 150
         local flow1 = law_frame.add{
             type = "flow",
             direction = "horizontal"
@@ -1272,10 +1288,16 @@ function CreateLawfulEvilGUI(player)
         }
         flow2.style.horizontally_stretchable = true
         local description = flow2.add{
-            type = "label",
-            caption = law.description
+            type = "text-box",
+            text = law.description
         }
-        flow1.add{
+        description.read_only = true
+        description.style.horizontally_stretchable = true
+        description.style.vertically_stretchable = true
+        description.style.maximal_width = 800
+        description.style.minimal_height = 50
+        description.style.maximal_height = 60
+        local vote_button = flow1.add{
             type = "button",
             name = "vote_law_" .. law.index,
             caption = {"view"}
@@ -1422,13 +1444,13 @@ function CreateLawGUI(event)
             type = "label",
             caption = {"lawful-evil.gui.link-with"}
         }
-        local options = {"none"}
+        local options = {{"lawful-evil.gui.none"}}
         local options_indexed = {}
         local i = 2
         for _, law in pairs(global.laws) do
             if not law.passed then
                 table.insert(options, law.title)
-                options_indexed[law.index] = i
+                options_indexed[law.id] = i
                 i = i + 1
             end
         end
@@ -1498,6 +1520,7 @@ function CreateLawGUI(event)
                 type = "label",
                 caption = {"lawful-evil.gui.votes-left-to-revoke", (votes.ayes - revoke_votes)}
             }
+            buttons.style.vertical_align = "center"
         end
     end
 end
@@ -1599,7 +1622,9 @@ function CreateClauseGUI(parent, clause, read_only)
                 type = "checkbox",
                 name = "when_entity_similar_type",
                 state = clause.when_entity_similar_type,
+                enabled = not read_only
             }
+            gui.style.vertical_align = "center"
         end
     end
     if not clause.base_clause and not read_only then
@@ -1730,6 +1755,7 @@ function CreateEffectGUI(parent, effect, read_only)
             state = effect.effect_license_state,
             enabled = not read_only
         }
+        gui.style.vertical_align = "center"
     elseif effect.effect_type == EFFECT_TYPE_FINE_FAIL then
         gui.add{
             type = "label",
@@ -1763,7 +1789,10 @@ function CreateValueFields(gui, clause, prefix, read_only)
         type = "textfield",
         name = prefix.."value",
         text = tostring(clause[prefix.."value"]) or "0",
-        enabled = not read_only
+        enabled = not read_only,
+        numeric = true,
+        allow_decimal = false,
+        allow_negative = false
     }
     textfield.style.width = 50
     local value_type = clause[prefix.."value_type"]

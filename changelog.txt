@@ -1,4 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.11
+Date: 08. 11. 2019
+  Bugfixes:
+    - Fixed linked laws
+    - Fixed deleting of laws
+  Changes:
+    - Improved localization
+    - Changed user interface
+  Notes:
+    - This update for Factorio 0.17 and updated by ZwerOxotnik
+    - I need much more tests etc
+---------------------------------------------------------------------------------------------------
 Version: 0.3.10
 Date: 07. 11. 2019
   Changes:

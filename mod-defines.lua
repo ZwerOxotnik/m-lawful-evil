@@ -187,17 +187,17 @@ EFFECT_LICENSE_TYPE_GUN = 4
 EFFECT_LICENSE_TYPE_ARTILLERY = 5
 
 EFFECT_FINE_TYPE_ITEMS = {
-    {"player-inventory"},
-    {"item"},
-    {"money"}
+    {"lawful-evil.gui.player-inventory"},
+    {"lawful-evil.gui.item"},
+    {"lawful-evil.gui.money"}
 }
 EFFECT_FINE_TYPE_INVENTORY = 1
 EFFECT_FINE_TYPE_ITEM = 2
 EFFECT_FINE_TYPE_MONEY = 3
 
 EFFECT_REWARD_TYPE_ITEMS = {
-    {"item"},
-    {"money"}
+    {"lawful-evil.gui.item"},
+    {"lawful-evil.gui.money"}
 }
 EFFECT_REWARD_TYPE_ITEM = 1
 EFFECT_REWARD_TYPE_MONEY = 2
@@ -209,7 +209,7 @@ VALUE_TYPE_ITEMS = {
 VALUE_TYPE_PERCENTAGE = 1
 VALUE_TYPE_FIXED = 2
 
-OPERATION_TYPE_ITEMS = {"==", "!=", ">", "<"}
+OPERATION_TYPE_ITEMS = {"=", "!=", ">", "<"}
 OPERATION_TYPE_EQUAL = 1
 OPERATION_TYPE_NOT_EQUAL = 2
 OPERATION_TYPE_GREATER_THAN = 3
