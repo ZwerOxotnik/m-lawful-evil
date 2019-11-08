@@ -1,5 +1,5 @@
 
-![thumbnail](https://github.com/ZwerOxotnik/lawful-evil/blob/0.17/thumbnail.png?raw=true)
+![thumbnail](/thumbnail.png?raw=true)
 
 # Contents
 
