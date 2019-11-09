@@ -155,7 +155,7 @@ Event.register(defines.events.on_player_mined_tile, function(event)
 end)
 
 Event.register(defines.events.on_research_started, function(event)
-    local laws = LawMatch(WHEN_FORCE_RESEARCHES, event.research.localise_name, event.research.force, nil)
+    local laws = LawMatch(WHEN_FORCE_RESEARCHES, event.research.localised_name, event.research.force, nil)
     event.force = event.research.force
     ExecuteLaws(laws, event)
 end)
