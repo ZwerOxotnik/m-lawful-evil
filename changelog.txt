@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.17
+Date: 09. 11. 2019
+  Bugfixes:
+    - Fixed on_research_started event (https://mods.factorio.com/mod/m-multiplayertrading/discussion/5dc6b6f7ac6472000db91e5c)
+  Notes:
+    - This update for Factorio 0.17 and updated by ZwerOxotnik
+    - I need much more tests etc
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.16
 Date: 09. 11. 2019
   Bugfixes:
