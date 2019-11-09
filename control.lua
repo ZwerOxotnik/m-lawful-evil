@@ -221,7 +221,7 @@ local function CheckVotes()
                 PassLaw(law)
             else
                 game.print({"lawful-evil.messages.law-is-not-passed", law.title, votes.ayes, votes.noes})
-                RevokeLaw(law)
+                RevokeLaw(law, law.index)
             end
         end
     end
@@ -1056,22 +1056,14 @@ function PassLaw(law)
     end
 end
 
-function RevokeLaw(law)
+function RevokeLaw(law, index)
     game.print({"lawful-evil.messages.law-is-revoked", law.title})
-    script.raise_event(module.self_events.on_pre_revoke_law, {law_id = law.id})
+    local law_id = law.id
+    script.raise_event(module.self_events.on_pre_revoke_law, {law_id = law_id})
+    table.remove(global.laws, index)
     for i, other_law in pairs(global.laws) do
-        if other_law.linked_law == law.id then
-            RevokeLaw(other_law)
-            table.remove(global.laws, i)
-        end
-    end
-
-    if law.index then
-        for i, target_law in pairs(global.laws) do
-            if target_law.id == law.id then
-                table.remove(global.laws, i)
-                return
-            end
+        if other_law.linked_law == law_id then
+            RevokeLaw(other_law, i)
         end
     end
 end
@@ -1082,7 +1074,7 @@ function RevokeVoteLaw(law, player, vote)
         local votes = GetLawVotes(law)
         local revoke_count = GetLawRevokeVotes(law)
         if revoke_count >= votes.ayes then
-            RevokeLaw(law)
+            RevokeLaw(law, law.index)
         end
     end
 end
