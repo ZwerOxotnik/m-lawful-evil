@@ -63,8 +63,9 @@ Event.register(defines.events.on_player_created, function(event)
     AddLawfulButton(player)
 end)
 
-Event.register(defines.events.on_console_chat, function(event) 
+Event.register(defines.events.on_console_chat, function(event)
     local player = Event.get_player(event)
+    if not (player and player.valid) then return end
     local message = event.message
     local laws = LawMatch(WHEN_PLAYER_CHATS, message, player.force, player)
     event.force = player.force
