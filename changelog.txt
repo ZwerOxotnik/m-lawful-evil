@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.25
+Date: 10. 05. 2020
+  Bugfixes:
+    - Reusing group if already created (https://github.com/ZwerOxotnik/m-lawful-evil/pull/2/commits/17bd0e2b6a2562367595e0435dd84c820444f870)
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld (https://github.com/ZwerOxotnik/m-lawful-evil/commits?author=pliesveld)
+---------------------------------------------------------------------------------------------------
+Version: 0.3.24
+Date: 10. 05. 2020
+  Bugfixes:
+    - Reusing group if already created (https://github.com/ZwerOxotnik/m-lawful-evil/pull/2/commits/17bd0e2b6a2562367595e0435dd84c820444f870)
+  Notes:
+    - This update for Factorio 0.17 and updated by pliesveld (https://github.com/ZwerOxotnik/m-lawful-evil/commits?author=pliesveld)
+---------------------------------------------------------------------------------------------------
 Version: 0.3.17
 Date: 09. 11. 2019
   Bugfixes:
