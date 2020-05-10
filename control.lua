@@ -30,11 +30,11 @@ script.on_init(function()
     }
     table.insert(global.laws, example_law)
 
-    local no_driving = game.permissions.create_group("no_driving")
+    local no_driving = game.permissions.get_group("no_driving") or game.permissions.create_group("no_driving")
     no_driving.set_allows_action(defines.input_action.toggle_driving, false)
-    local no_artillery = game.permissions.create_group("no_artillery")
+    local no_artillery = game.permissions.get_group("no_artillery") or game.permissions.create_group("no_artillery")
     no_artillery.set_allows_action(defines.input_action.use_artillery_remote, false)
-    local no_shooting = game.permissions.create_group("no_shooting")
+    local no_shooting = game.permissions.get_group("no_shooting") or game.permissions.create_group("no_shooting")
     no_shooting.set_allows_action(defines.input_action.change_shooting_state, false)
 end)
 
