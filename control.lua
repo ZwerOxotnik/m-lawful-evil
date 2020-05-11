@@ -77,9 +77,17 @@ Event.register(defines.events.on_entity_died, function(event)
     if not (cause and cause.valid) then return end
 
     local player
+
     if cause.type == "car" then
         player = cause.get_driver()
+        if player then
+            if player.type == "character" then
+                player = player.player
+            end
+        end
     elseif cause.type == "player" then
+        player = cause.player
+    elseif cause.type == "character" then
         player = cause.player
     end
     if not (player and player.valid) then return end
@@ -99,7 +107,14 @@ Event.register(defines.events.on_entity_damaged, function(event)
     local player
     if cause.type == "car" then
         player = cause.get_driver()
+        if player then
+            if player.type == "character" then
+                player = player.player
+            end
+        end
     elseif cause.type == "player" then
+        player = cause.player
+    elseif cause.type == "character" then
         player = cause.player
     end
     if not (player and player.valid) then return end
