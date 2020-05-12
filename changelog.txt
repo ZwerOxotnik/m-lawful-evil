@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.27
+Date: 12. 05. 2020
+  Bugfixes:
+    - Proper calling of laws during on_entity_died
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld and ZwerOxotnik
+---------------------------------------------------------------------------------------------------
+Version: 0.3.26
+Date: 12. 05. 2020
+  Bugfixes:
+    - Proper calling of laws during on_entity_died
+  Notes:
+    - This update for Factorio 0.17 and updated by pliesveld and ZwerOxotnik
+---------------------------------------------------------------------------------------------------
 Version: 0.3.25
 Date: 10. 05. 2020
   Bugfixes:

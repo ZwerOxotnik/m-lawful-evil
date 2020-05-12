@@ -72,32 +72,35 @@ Event.register(defines.events.on_console_chat, function(event)
     ExecuteLaws(laws, event)
 end)
 
-Event.register(defines.events.on_entity_died, function(event)
-    local cause = event.cause
-    if not (cause and cause.valid) then return end
-
-    local player
-
-    if cause.type == "car" then
-        player = cause.get_driver()
-        if player then
-            if player.type == "character" then
-                player = player.player
-            end
-        end
-    elseif cause.type == "player" then
-        player = cause.player
-    elseif cause.type == "character" then
-        player = cause.player
-    end
+local function law_on_entity_died(event, player)
     if not (player and player.valid) then return end
 
     local laws = LawMatch(WHEN_PLAYER_DESTROYS, event.entity.name, event.force, player)
     if player.is_player() then
         event.player_index = player.index
     end
-    event.force = cause.force
+    event.force = event.cause.force
     ExecuteLaws(laws, event)
+end
+
+Event.register(defines.events.on_entity_died, function(event)
+    local cause = event.cause
+    if not (cause and cause.valid) then return end
+
+    if cause.type == "character" then
+        law_on_entity_died(event, cause.player)
+    elseif cause.type == "car" then
+        local passenger = cause.get_passenger()
+        local driver = cause.get_driver()
+        if passenger and driver then
+            law_on_entity_died(event, passenger.player)
+            law_on_entity_died(event, driver.player)
+        elseif passenger then
+            law_on_entity_died(event, passenger.player)
+        elseif driver then
+            law_on_entity_died(event, driver.player)
+        end
+    end
 end)
 
 Event.register(defines.events.on_entity_damaged, function(event)
