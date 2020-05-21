@@ -1,4 +1,32 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.31
+Date: 21. 05. 2020
+  Features:
+    - Added new law type to make laws like guests
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.30
+Date: 21. 05. 2020
+  Features:
+    - Added new law type to make laws like guests
+  Notes:
+    - This update for Factorio 0.17 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.29
+Date: 16. 05. 2020
+  Bugfixes:
+    - Proper calling of laws during on_entity_damaged
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.28
+Date: 16. 05. 2020
+  Bugfixes:
+    - Proper calling of laws during on_entity_damaged
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
 Version: 0.3.27
 Date: 12. 05. 2020
   Bugfixes:
