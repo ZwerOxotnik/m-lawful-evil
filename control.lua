@@ -1030,6 +1030,8 @@ function ExecuteEffect(law, effect, event)
             end
         end
         Player.set_data(player, player_data)
+    elseif effect.effect_type == EFFECT_TYPE_REVOKE_LAW then
+        RevokeLaw(law)
     end
 end
 
@@ -1676,6 +1678,11 @@ function CreateEffectGUI(parent, effect, read_only)
         gui.add{
             type = "label",
             caption = {"lawful-evil.gui.disallow-description"}
+        }
+    elseif effect.effect_type == EFFECT_TYPE_REVOKE_LAW then
+        gui.add{
+            type = "label",
+            caption = {"lawful-evil.gui.revoke-law-description"}
         }
     elseif effect.effect_type == EFFECT_TYPE_ALERT then
         gui.add{
