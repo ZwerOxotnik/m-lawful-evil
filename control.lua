@@ -450,6 +450,7 @@ Gui.on_click("submit_law", function(event)
     local gui = GetLawGui(player)
     if gui then
         local law = SaveLaw(gui)
+        game.print({"lawful-evil.messages.law-is-submitted", law.title})
         table.insert(global.laws, law)
         gui.destroy()
         CreateLawfulEvilGUI(player)
@@ -1891,6 +1892,7 @@ remote.add_interface('lawful-evil', {
     end,
     get_new_law = GetNewLaw,
     InsertNewLaw = function(new_law)
+        game.print({"lawful-evil.messages.law-is-submitted", new_law.title})
         table.insert(global.laws, new_law)
     end,
     revoke_law = RevokeLaw
