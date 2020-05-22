@@ -224,6 +224,14 @@ Event.register(defines.events.on_player_driving_changed_state, function(event)
     end
 end)
 
+Event.register(defines.events.on_player_respawned, function(event)
+    local player = Event.get_player(event)
+    if not (player and player.valid) then return end
+    local laws = LawMatch(WHEN_PLAYER_RESPAWNS, message, player.force, player)
+    event.force = player.force
+    ExecuteLaws(laws, event)
+end)
+
 script.on_nth_tick(3, function(event)
     -- Remove items (queued up via law effects)
     for _, player in pairs(game.players) do -- TODO: change for connected players
