@@ -9,6 +9,7 @@ WHEN_PLAYER_KILLS = "player-kills-player"
 WHEN_FORCE_RESEARCHES = "force-researches"
 WHEN_ROCKET_LAUNCHES = "rocket-launched"
 WHEN_PLAYER_CHATS = "player-chats"
+WHEN_PLAYER_RESPAWNS = "player-respawns"
 WHEN_THIS_LAW_PASSED = "this-law-passed"
 WHEN_VALUE = "value"
 WHEN_DAY = "daytime"
@@ -137,6 +138,13 @@ CLAUSE_TYPES = {
         and_allowed = true,
         or_allowed = true,
         order = "m"
+    },
+    [WHEN_PLAYER_RESPAWNS] = {
+        localised_text = "a player respawns",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "n"
     },
 }
 
