@@ -1,4 +1,20 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.33
+Date: 23. 05. 2020
+  Features:
+    - Added new trigger clause. Laws can be triggered on player spawn now
+    - Added notification about a new added law during the voting stage
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.32
+Date: 23. 05. 2020
+  Features:
+    - Added new trigger clause. Laws can be triggered on player spawn now
+    - Added notification about a new added law during the voting stage
+  Notes:
+    - This update for Factorio 0.17 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
 Version: 0.3.31
 Date: 21. 05. 2020
   Features:
