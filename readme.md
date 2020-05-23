@@ -17,7 +17,7 @@ has support of mods, especially economic ones.
 
 [![Creative Commons License](https://licensebuttons.net/l/by/4.0/88x31.png)](https://creativecommons.org/licenses/by/4.0/)
 
-This work is a derivative of "Lawful Evil" by Luke Perkin, used under [Creative Commons Attribution 4.0 Unported license](https://creativecommons.org/licenses/by/4.0/). This work is attributed to Luke Perkin and ZwerOxotnik, and the original version can be found [here](https://mods.factorio.com/mod/lawful-evil).
+This work is a derivative of "Lawful Evil" by Luke Perkin, used under [Creative Commons Attribution 4.0 Unported license](https://creativecommons.org/licenses/by/4.0/), and the original version can be found [here](https://mods.factorio.com/mod/lawful-evil). This work is modified by [ZwerOxotnik](https://github.com/ZwerOxotnik), [pliesveld](https://github.com/pliesveld).
 
 This work is licensed under a [Creative Commons Attribution 4.0 International License](/LICENSE).
 
