@@ -10,3 +10,12 @@ data:extend{
         }
     }
 }
+
+local default_gui = data.raw["gui-style"].default
+if default_gui["large_caption_label"] == nil then
+    default_gui["large_caption_label"] = {
+        type = "label_style",
+        parent = "caption_label",
+        font = "default-large-bold"
+    }
+end
