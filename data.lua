@@ -10,3 +10,10 @@ data:extend{
         }
     }
 }
+
+local default_gui = data.raw["gui-style"].default
+default_gui["large_caption_label"] = {
+    type = "label_style",
+    parent = "caption_label",
+    font = "default-large-bold"
+}
