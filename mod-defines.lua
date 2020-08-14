@@ -9,6 +9,7 @@ WHEN_PLAYER_KILLS = "player-kills-player"
 WHEN_FORCE_RESEARCHES = "force-researches"
 WHEN_ROCKET_LAUNCHES = "rocket-launched"
 WHEN_PLAYER_CHATS = "player-chats"
+WHEN_PLAYER_RESPAWNS = "player-respawns"
 WHEN_THIS_LAW_PASSED = "this-law-passed"
 WHEN_VALUE = "value"
 WHEN_DAY = "daytime"
@@ -138,6 +139,13 @@ CLAUSE_TYPES = {
         or_allowed = true,
         order = "m"
     },
+    [WHEN_PLAYER_RESPAWNS] = {
+        localised_text = "a player respawns",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "n"
+    },
 }
 
 ELEM_ENTITY = 1
@@ -157,7 +165,8 @@ EFFECT_TYPE_ITEMS = {
     {"lawful-evil.effect_type.unmute-player"},
     {"lawful-evil.effect_type.if-fine-fails"},
     {"lawful-evil.effect_type.if-nth-offence"},
-    {"lawful-evil.effect_type.reset-offence-count"}
+    {"lawful-evil.effect_type.reset-offence-count"},
+    {"lawful-evil.effect_type.revoke-law"}
 }
 EFFECT_TYPE_FINE = 1
 EFFECT_TYPE_REWARD = 2
@@ -172,6 +181,7 @@ EFFECT_TYPE_UNMUTE = 10
 EFFECT_TYPE_FINE_FAIL = 11
 EFFECT_TYPE_NTH_OFFENCE = 12
 EFFECT_TYPE_RESET_OFFENCE = 13
+EFFECT_TYPE_REVOKE_LAW = 14
 
 EFFECT_LICENSE_TYPE_ITEMS = {
     {"lawful-evil.effect_license_type.car-license"},

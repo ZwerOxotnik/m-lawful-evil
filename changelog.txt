@@ -1,4 +1,76 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.33
+Date: 23. 05. 2020
+  Features:
+    - Added new trigger clause. Laws can be triggered on player spawn now
+    - Added notification about a new added law during the voting stage
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.32
+Date: 23. 05. 2020
+  Features:
+    - Added new trigger clause. Laws can be triggered on player spawn now
+    - Added notification about a new added law during the voting stage
+  Notes:
+    - This update for Factorio 0.17 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.31
+Date: 21. 05. 2020
+  Features:
+    - Added new law type to make laws like guests
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.30
+Date: 21. 05. 2020
+  Features:
+    - Added new law type to make laws like guests
+  Notes:
+    - This update for Factorio 0.17 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.29
+Date: 16. 05. 2020
+  Bugfixes:
+    - Proper calling of laws during on_entity_damaged
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.28
+Date: 16. 05. 2020
+  Bugfixes:
+    - Proper calling of laws during on_entity_damaged
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld
+---------------------------------------------------------------------------------------------------
+Version: 0.3.27
+Date: 12. 05. 2020
+  Bugfixes:
+    - Proper calling of laws during on_entity_died
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld and ZwerOxotnik
+---------------------------------------------------------------------------------------------------
+Version: 0.3.26
+Date: 12. 05. 2020
+  Bugfixes:
+    - Proper calling of laws during on_entity_died
+  Notes:
+    - This update for Factorio 0.17 and updated by pliesveld and ZwerOxotnik
+---------------------------------------------------------------------------------------------------
+Version: 0.3.25
+Date: 10. 05. 2020
+  Bugfixes:
+    - Reusing group if already created (https://github.com/ZwerOxotnik/m-lawful-evil/pull/2/commits/17bd0e2b6a2562367595e0435dd84c820444f870)
+  Notes:
+    - This update for Factorio 0.18 and updated by pliesveld (https://github.com/ZwerOxotnik/m-lawful-evil/commits?author=pliesveld)
+---------------------------------------------------------------------------------------------------
+Version: 0.3.24
+Date: 10. 05. 2020
+  Bugfixes:
+    - Reusing group if already created (https://github.com/ZwerOxotnik/m-lawful-evil/pull/2/commits/17bd0e2b6a2562367595e0435dd84c820444f870)
+  Notes:
+    - This update for Factorio 0.17 and updated by pliesveld (https://github.com/ZwerOxotnik/m-lawful-evil/commits?author=pliesveld)
+---------------------------------------------------------------------------------------------------
 Version: 0.3.17
 Date: 09. 11. 2019
   Bugfixes:
