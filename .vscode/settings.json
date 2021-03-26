@@ -1,0 +1,18 @@
+{
+    "auto-run-command.rules": [
+
+        {
+            "condition": "always",
+            "command": "gitlens.pullRepositories",
+            "message": "Downloading files from gits"
+        }
+    ],
+    "lua.targetVersion": "5.2",
+    "Lua.diagnostics.globals": [
+        "global"
+    ],
+    "Lua.diagnostics.disable": [
+        "undefined-global"
+    ],
+    "Lua.runtime.version": "Lua 5.2"
+}
