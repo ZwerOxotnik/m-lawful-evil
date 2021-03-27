@@ -136,6 +136,8 @@ end)
 
 Event.register(defines.events.on_built_entity, function(event)
     local player = Event.get_player(event)
+    if player.controller_type == defines.controllers.editor then return end
+
     local laws = LawMatch(WHEN_PLAYER_BUILDS, event.created_entity.name, player.force, player)
     event.entity = event.created_entity
     event.built = true
@@ -145,6 +147,8 @@ end)
 
 Event.register(defines.events.on_player_mined_entity, function(event)
     local player = Event.get_player(event)
+    if player.controller_type == defines.controllers.editor then return end
+
     local laws = LawMatch(WHEN_PLAYER_MINES, event.entity.name, player.force, player)
     event.mined = true
     event.force = player.force
@@ -153,6 +157,8 @@ end)
 
 Event.register(defines.events.on_player_crafted_item, function(event)
     local player = Event.get_player(event)
+    if player.controller_type == defines.controllers.editor then return end
+
     local laws = LawMatch(WHEN_PLAYER_CRAFTS, event.item_stack.name, player.force, player)
     event.force = player.force
     ExecuteLaws(laws, event)
@@ -160,6 +166,8 @@ end)
 
 Event.register(defines.events.on_player_built_tile, function(event)
     local player = Event.get_player(event)
+    if player.controller_type == defines.controllers.editor then return end
+
     for _, tile in pairs(event.tiles) do
         local laws = LawMatch(WHEN_PLAYER_TILES, event.item.name, player.force, player)
         event.force = player.force
@@ -169,6 +177,8 @@ end)
 
 Event.register(defines.events.on_player_mined_tile, function(event)
     local player = Event.get_player(event)
+    if player.controller_type == defines.controllers.editor then return end
+
     for _, tile in pairs(event.tiles) do
         event.item = tile.old_tile.items_to_place_this
         local laws = LawMatch(WHEN_PLAYER_MINES_TILE, event.item.name, player.force, player)
