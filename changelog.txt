@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.6.0
+Date: 27. 03. 2021
+  Major Features:
+    - Added custom scripts in laws
+  Changes:
+    - Changed style for laws
+  Bugfixes:
+    - Fixed some events in editor mode
+  Notes:
+    - This update for Factorio 1.1 and updated by ZwerOxotnik
+---------------------------------------------------------------------------------------------------
 Version: 0.5.1
 Date: 27. 03. 2021
   Bugfixes:
