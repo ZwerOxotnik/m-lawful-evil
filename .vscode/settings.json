@@ -15,7 +15,12 @@
         "script",
         "remote",
         "data",
-        "bit32"
+        "bit32",
+        "settings",
+        "mods",
+        "rendering",
+        "commands",
+        "log"
     ],
     "Lua.runtime.version": "Lua 5.2"
 }
