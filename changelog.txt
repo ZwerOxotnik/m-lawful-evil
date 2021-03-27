@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.0
+Date: 27. 03. 2021
+  Bugfixes:
+    - Fixed changelog
+    - Fixed event when a player mines tiles
+  Notes:
+    - This update for Factorio 1.1 and updated by ZwerOxotnik
+---------------------------------------------------------------------------------------------------
 Version: 0.3.33
 Date: 23. 05. 2020
   Features:
