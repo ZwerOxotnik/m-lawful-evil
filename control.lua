@@ -171,7 +171,7 @@ Event.register(defines.events.on_player_mined_tile, function(event)
     local player = Event.get_player(event)
     for _, tile in pairs(event.tiles) do
         event.item = tile.old_tile.items_to_place_this
-        local laws = LawMatch(WHEN_PLAYER_MINES_TILES, event.item.name, player.force, player)
+        local laws = LawMatch(WHEN_PLAYER_MINES_TILE, event.item.name, player.force, player)
         event.force = player.force
         ExecuteLaws(laws, event)
     end
@@ -185,7 +185,7 @@ end)
 
 Event.register(defines.events.on_rocket_launched, function(event)
     local laws = LawMatch(
-        WHEN_ROCKET_LAUNCHES, 
+        WHEN_ROCKET_LAUNCHES,
         event.rocket,
         event.rocket.force,
         nil)
@@ -196,7 +196,7 @@ end)
 Event.register(defines.events.on_player_died, function(event)
     if event.cause and event.cause.is_player() then
         local laws = LawMatch(
-            WHEN_PLAYER_KILLS, 
+            WHEN_PLAYER_KILLS,
             event.cause,
             event.cause.force,
             nil)
@@ -733,16 +733,16 @@ function ClauseMatch(law, clause, type, target, force, player)
         local value_2 = clause.when_2_value
         if clause.when_value_type == VALUE_TYPE_PERCENTAGE then
             value_1 = CalculatePercentageValue(
-                value_1, 
-                clause.when_value_percentage_type, 
-                clause.when_value_percentage_item, 
+                value_1,
+                clause.when_value_percentage_type,
+                clause.when_value_percentage_item,
                 force,
                 player)
         end
         if clause.when_2_value_type == VALUE_TYPE_PERCENTAGE then
             value_2 = CalculatePercentageValue(
-                value_2, 
-                clause.when_2_value_percentage_type, 
+                value_2,
+                clause.when_2_value_percentage_type,
                 clause.when_2_value_percentage_item,
                 force,
                 player)
@@ -766,7 +766,7 @@ function ClauseMatch(law, clause, type, target, force, player)
             else
                 return clause.when_elem == target
             end
-        end 
+        end
     end
     return false
 end
@@ -887,7 +887,7 @@ end
 function ExecuteLaws(laws, event)
     for i, law in pairs(laws) do
         local clause = law.clauses[1]
-        
+
         -- Apply offense count
         if not law.offences then law.offences = {} end
         local player = Event.get_player(event)
@@ -928,7 +928,7 @@ function ExecuteEffect(law, effect, event)
             force,
             player)
     end
-    
+
     if effect.effect_type == EFFECT_TYPE_NTH_OFFENCE then
         event.stop_effects = (offence_count ~= effect.effect_nth_offence)
         -- game.print(offence_count.." == "..effect.effect_nth_offence)
@@ -1174,8 +1174,8 @@ end
 function GetClauseTypes(logic_type)
     local collected_types = {}
     for id, type in pairs(CLAUSE_TYPES) do
-        if  (type.base_allowed and logic_type == LOGIC_TYPE_BASE) 
-            or (type.and_allowed and logic_type == LOGIC_TYPE_AND) 
+        if  (type.base_allowed and logic_type == LOGIC_TYPE_BASE)
+            or (type.and_allowed and logic_type == LOGIC_TYPE_AND)
             or (type.or_allowed and logic_type == LOGIC_TYPE_OR)
             then
                 table.insert(collected_types, id)
@@ -1634,7 +1634,7 @@ function CreateClauseGUI(parent, clause, read_only)
             elem_type = elem_type,
             enabled = not read_only
         }
-        pcall(function() 
+        pcall(function()
             clause_when_elem.elem_value = clause.when_elem
         end)
         if elem_type == "entity" then
@@ -1861,10 +1861,10 @@ function CreateValueFields(gui, clause, prefix, read_only)
                 caption = {"lawful-evil.multiplayer-trading.missing"}
             }
             missing.style.font_color = {r = 1}
-        elseif pct_type == PERCENTAGE_TYPE_TOTAL_PRODUCTION 
+        elseif pct_type == PERCENTAGE_TYPE_TOTAL_PRODUCTION
             or pct_type == PERCENTAGE_TYPE_TOTAL_CONSUMPTION
             or pct_type == PERCENTAGE_TYPE_RATE_PRODUCTION
-            or pct_type == PERCENTAGE_TYPE_RATE_CONSUMPTION 
+            or pct_type == PERCENTAGE_TYPE_RATE_CONSUMPTION
             then
                 gui.add{
                     type = "choose-elem-button",
