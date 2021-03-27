@@ -166,7 +166,8 @@ EFFECT_TYPE_ITEMS = {
     {"lawful-evil.effect_type.if-fine-fails"},
     {"lawful-evil.effect_type.if-nth-offence"},
     {"lawful-evil.effect_type.reset-offence-count"},
-    {"lawful-evil.effect_type.revoke-law"}
+    {"lawful-evil.effect_type.revoke-law"},
+    {"lawful-evil.effect_type.custom-script"}
 }
 EFFECT_TYPE_FINE = 1
 EFFECT_TYPE_REWARD = 2
@@ -182,6 +183,7 @@ EFFECT_TYPE_FINE_FAIL = 11
 EFFECT_TYPE_NTH_OFFENCE = 12
 EFFECT_TYPE_RESET_OFFENCE = 13
 EFFECT_TYPE_REVOKE_LAW = 14
+EFFECT_TYPE_CUSTOM_SCRIPT = 15
 
 EFFECT_LICENSE_TYPE_ITEMS = {
     {"lawful-evil.effect_license_type.car-license"},

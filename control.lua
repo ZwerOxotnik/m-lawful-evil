@@ -580,10 +580,12 @@ function SaveLaw(gui)
     end
     law.effects = {}
     for i, elem in pairs(gui.effects_frame.effects.children) do
-        local effect = {
-            base_effect = (i == 1)
-        }
-        law.effects[i] = SaveEffect(elem, law, effect)
+        if elem.effect_type then
+            local effect = {
+                base_effect = (i == 1)
+            }
+            law.effects[i] = SaveEffect(elem, effect, player)
+        end
     end
     if gui.buttons.linked_law.selected_index > 1 then
         local options = {0}
@@ -644,8 +646,9 @@ function SaveClause(gui, law, clause)
     return clause
 end
 
-function SaveEffect(gui, law, effect)
-    effect.effect_type = gui.effect_type.selected_index
+function SaveEffect(gui, effect, player)
+    local effect_type = gui.effect_type.selected_index
+    effect.effect_type = effect_type
     if gui.effect_value then
         effect.effect_value = tonumber(gui.effect_value.text) or 0
         effect.effect_value_type = gui.effect_value_type.selected_index
@@ -672,6 +675,13 @@ function SaveEffect(gui, law, effect)
     end
     if gui.effect_text then
         effect.effect_text = gui.effect_text.text
+    elseif gui.parent.script_text then
+        local script = loadstring(gui.parent.script_text.text)
+        if type(script) == "function" then
+            effect.script_text = gui.parent.script_text.text
+        else
+            player.print("Added custom script doesn't compile in the law")
+        end
     end
     if gui.effect_license_type and gui.effect_license_state then
         effect.effect_license_type = gui.effect_license_type.selected_index
@@ -1041,6 +1051,8 @@ function ExecuteEffect(law, effect, event)
         Player.set_data(player, player_data)
     elseif effect.effect_type == EFFECT_TYPE_REVOKE_LAW then
         RevokeLaw(law)
+    elseif effect.effect_type == EFFECT_TYPE_CUSTOM_SCRIPT and effect.script_text then
+        loadstring(effect.script_text)()(event)
     end
 end
 
@@ -1405,12 +1417,14 @@ function CreateLawGUI(event)
         direction = "vertical"
     }
     if not read_only then
-        gui.add{
+        local title = gui.add{
             type = "textfield",
             name = "law_title",
             text = law.title or "Title...",
             enabled = not read_only
         }
+        title.style.maximal_width = 0
+        title.style.horizontally_stretchable = true
     end
     local description = gui.add{
         type = "text-box",
@@ -1418,8 +1432,9 @@ function CreateLawGUI(event)
         text = law.description or "State your intent...",
         enabled = not read_only
     }
+    description.style.maximal_width = 0
+    description.style.horizontally_stretchable = true
     description.style.height = 50
-    description.style.width = 500
 
     local clauses_frame = gui.add{
         type = "frame",
@@ -1557,6 +1572,7 @@ function CreateClauseGUI(parent, clause, read_only)
         type = "flow",
         flow = "horizontal"
     }
+    gui.style.horizontally_stretchable = true
     gui.style.height = 32
     if clause.base_clause then
         gui.add{
@@ -1670,6 +1686,7 @@ function CreateEffectGUI(parent, effect, read_only)
         type = "flow",
         flow = "horizontal"
     }
+    gui.style.horizontally_stretchable = true
     gui.style.height = 32
     local main_label = gui.add{
         type = "label",
@@ -1693,6 +1710,16 @@ function CreateEffectGUI(parent, effect, read_only)
             type = "label",
             caption = {"lawful-evil.gui.revoke-law-description"}
         }
+    elseif effect.effect_type == EFFECT_TYPE_CUSTOM_SCRIPT then
+        local script_text = parent.add{
+            type = "text-box",
+            name = "script_text",
+            text = effect.script_text or "return function(event)\n game.print(\"Event:\" .. event.name)\nend",
+            enabled = not read_only
+        }
+        script_text.style.minimal_height = 90
+        script_text.style.maximal_width = 0
+        script_text.style.horizontally_stretchable = true
     elseif effect.effect_type == EFFECT_TYPE_ALERT then
         gui.add{
             type = "textfield",
