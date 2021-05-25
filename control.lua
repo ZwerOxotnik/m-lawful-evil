@@ -1,3 +1,5 @@
+if script.level.campaign_name then return end
+
 require 'stdlib/event/event'
 require 'stdlib/gui/gui'
 require 'stdlib/player'

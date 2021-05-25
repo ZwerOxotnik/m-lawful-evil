@@ -1,11 +1,14 @@
 {
   "name": "m-lawful-evil",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "factorio_version": "1.1",
   "title": "Lawful Evil",
   "author": "Luke Perkin",
   "contact": "zweroxotnik@gmail.com, lukeperkin@gmail.com",
   "www": "www.locogame.co.uk",
   "source": "https://github.com/ZwerOxotnik/lawful-evil",
-  "dependencies": ["base", "? m-multiplayertrading"]
+  "dependencies": [
+    "base",
+    "? m-multiplayertrading"
+  ]
 }
