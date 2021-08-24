@@ -6,6 +6,7 @@ require 'stdlib/player'
 require 'stdlib/game'
 require 'mpt'
 require 'mod-defines'
+local mod_gui = require("mod-gui")
 
 -- TODO: add admin mode and then extend the mode
 -- TODO: make several tables for laws
@@ -49,14 +50,15 @@ end)
 -- end)
 
 local function AddLawfulButton(player)
-    local gui = player.gui.top
-    if gui.lawful_evil_button then
-        gui.lawful_evil_button.destroy()
+    local lawful_evil_button = mod_gui.get_button_flow(player).lawful_evil_button
+    if lawful_evil_button then
+        lawful_evil_button.destroy()
     end
-    local button = gui.add{
+    mod_gui.get_button_flow(player).add{
         type = "sprite-button",
         name = "lawful_evil_button",
-        sprite = "lawful-button-sprite"
+        sprite = "lawful-button-sprite",
+        style = "mod_gui_button"
     }
 end
 
@@ -1918,6 +1920,10 @@ end
 
 local function on_configuration_changed(event)
     for _, player in pairs(game.players) do
+        local old_button = player.gui.top.lawful_evil_button
+        if old_button then
+            old_button.destroy()
+        end
         AddLawfulButton(player)
     end
 end
@@ -1927,7 +1933,7 @@ script.on_configuration_changed(on_configuration_changed)
 remote.remove_interface('lawful-evil')
 remote.add_interface('lawful-evil', {
     get_event_name = function(name)
-		return module.self_events[name]
+        return module.self_events[name]
     end,
     get_law_by_id = function(target_id)
         for _, law in pairs(global.laws) do
