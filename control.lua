@@ -798,7 +798,7 @@ end
 function CalculatePercentageValue(value, type, item, force, player)
     local factor = value * 0.01
     if type == PERCENTAGE_TYPE_BALANCE then
-        return MultiplayerTrading.get_balance(force) * factor
+        return EasyAPI.get_balance(force) * factor
     elseif type == PERCENTAGE_TYPE_PLAYER_COUNT then
         local count = 0
         for _, tech in pairs(game.players) do count = count + 1 end
@@ -971,7 +971,7 @@ function ExecuteEffect(law, effect, event)
                 count = math.floor(value)
             }
         elseif effect.effect_reward_type == EFFECT_REWARD_TYPE_MONEY then
-            MultiplayerTrading.add_to_balance(force, value)
+            EasyAPI.add_to_balance(force, value)
         end
     elseif effect.effect_type == EFFECT_TYPE_FINE then
         if effect.effect_fine_type == EFFECT_FINE_TYPE_INVENTORY then
@@ -985,9 +985,9 @@ function ExecuteEffect(law, effect, event)
                 count = math.floor(value)
             }
         elseif effect.effect_fine_type == EFFECT_FINE_TYPE_MONEY then
-            local balance = MultiplayerTrading.get_balance(force)
+            local balance = EasyAPI.get_balance(force)
             event.fine_success = (balance >= value)
-            MultiplayerTrading.add_to_balance(force, -value)
+            EasyAPI.add_to_balance(force, -value)
         end
     elseif effect.effect_type == EFFECT_TYPE_FINE_FAIL then
         event.stop_effects = (event.fine_success == true or event.fine_success == nil)
@@ -1765,7 +1765,7 @@ function CreateEffectGUI(parent, effect, read_only)
             }
             CreateValueFields(gui, effect, "effect_", read_only)
         elseif effect.effect_fine_type == EFFECT_FINE_TYPE_MONEY then
-            if MultiplayerTrading.is_loaded() then
+            if EasyAPI.is_loaded() then
                 CreateValueFields(gui, effect, "effect_", read_only)
             else
                 gui.add{
@@ -1798,7 +1798,7 @@ function CreateEffectGUI(parent, effect, read_only)
             }
             CreateValueFields(gui, effect, "effect_", read_only)
         else
-            if MultiplayerTrading.is_loaded() then
+            if EasyAPI.is_loaded() then
                 CreateValueFields(gui, effect, "effect_", read_only)
             else
                 gui.add{
@@ -1896,7 +1896,7 @@ function CreateValueFields(gui, clause, prefix, read_only)
             read_only = read_only,
             label_style = "menu_message"
         }
-        if pct_type == PERCENTAGE_TYPE_BALANCE and not MultiplayerTrading.is_loaded() then
+        if pct_type == PERCENTAGE_TYPE_BALANCE and not EasyAPI.is_loaded() then
             local missing = gui.add{
                 type = "label",
                 caption = {"lawful-evil.multiplayer-trading.missing"}
