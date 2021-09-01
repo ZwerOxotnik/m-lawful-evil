@@ -8,6 +8,11 @@ require 'mpt'
 require 'mod-defines'
 local mod_gui = require("mod-gui")
 
+
+local floor = math.floor
+local ceil = math.ceil
+
+
 -- TODO: add admin mode and then extend the mode
 -- TODO: make several tables for laws
 -- TODO: store last n laws in another variable for revoting by players
@@ -62,13 +67,412 @@ local function AddLawfulButton(player)
     }
 end
 
+local function IsDaytime()
+    local surface = game.surfaces[1]
+    return not (surface.daytime > surface.evening and surface.daytime < surface.morning)
+end
+
+-- TODO: optimize
+local function CalculatePercentageValue(value, type, item, force, player)
+    local factor = value * 0.01
+    if type == PERCENTAGE_TYPE_BALANCE then
+        return EasyAPI.get_balance(force) * factor
+    elseif type == PERCENTAGE_TYPE_PLAYER_COUNT then
+        -- local count = 0
+        -- for _, tech in pairs(game.players) do count = count + 1 end
+        -- return count * factor
+        return #game.players
+    elseif type == PERCENTAGE_TYPE_FORCE_PLAYER_COUNT then
+        return #force.players * factor
+    elseif type == PERCENTAGE_TYPE_EVOLUTION_FACTOR then
+        return force.evolution_factor * factor
+    elseif type == PERCENTAGE_TYPE_ROCKETS_LAUNCHED then
+        return force.rockets_launched * factor
+    elseif type == PERCENTAGE_TYPE_TOTAL_PRODUCTION then
+        if item then
+            return force.item_production_statistics.get_input_count(item) * factor
+        else
+            return 0
+        end
+    elseif type == PERCENTAGE_TYPE_RATE_PRODUCTION then
+        if item and global.production_rates then
+            local item_production = global.production_rates[force.name].production[item]
+            if item_production then
+                return item_production.rate
+            end
+        end
+        return 0
+    elseif type == PERCENTAGE_TYPE_TOTAL_CONSUMPTION then
+        if item then
+            return force.item_production_statistics.get_output_count(item) * factor
+        else
+            return 0
+        end
+    elseif type == PERCENTAGE_TYPE_RATE_CONSUMPTION then
+        if item and global.production_rates then
+            local item_consumption = global.production_rates[force.name].consumption[item]
+            if item_consumption then
+                return item_consumption.rate
+            end
+        end
+        return 0
+    elseif type == PERCENTAGE_TYPE_TECHNOLOGIES_RESEARCHED then
+        -- local count = 0
+        -- for _, tech in pairs(force.technologies) do count = count + 1 end
+        -- return count * factor
+        return #force.technologies * factor
+    elseif type == PERCENTAGE_TYPE_TRAINS then
+        local count = 0
+        for _, _force in pairs(game.forces) do
+            count = count + #_force.get_trains()
+        end
+        return count * factor
+    elseif type == PERCENTAGE_TYPE_FORCE_TRAINS then
+        return #force.get_trains() * factor
+    elseif type == PERCENTAGE_TYPE_CONSTRUCTION_ROBOTS then
+        local count = 0
+        for _, _force in pairs(game.forces) do
+            for _, network in pairs(_force.logistic_networks) do
+                count = count + network.all_construction_robots
+            end
+        end
+        return count * factor
+    elseif type == PERCENTAGE_TYPE_FORCE_CONSTRUCTION_ROBOTS then
+        local count = 0
+        for _, network in pairs(force.logistic_networks) do
+            count = count + network.all_construction_robots
+        end
+        return count * factor
+    elseif type == PERCENTAGE_TYPE_LOGISTIC_ROBOTS then
+        local count = 0
+        for _, _force in pairs(game.forces) do
+            for _, network in pairs(_force.logistic_networks) do
+                count = count + network.all_logistic_robots
+            end
+        end
+        return count * factor
+    elseif type == PERCENTAGE_TYPE_FORCE_LOGISTIC_ROBOTS then
+        local count = 0
+        for _, network in pairs(force.logistic_networks) do
+            count = count + network.all_logistic_robots
+        end
+        return count * factor
+    elseif type == PERCENTAGE_TYPE_PLAYER_TIME_ONLINE then
+        if player then
+            return player.online_time * factor
+        else
+            return 0
+        end
+    elseif type == PERCENTAGE_TYPE_PLAYER_TIME_AFK then
+        if player then
+            return player.afk_time * factor
+        else
+            return 0
+        end
+    elseif type == PERCENTAGE_TYPE_GAME_TICK then
+        return game.tick * factor
+    elseif type == PERCENTAGE_TYPE_DAYTIME then
+        return game.surfaces[1].daytime * factor
+    end
+end
+
+-- TODO: check
+local _technologies = nil
+local function GetTechnologies()
+    if _technologies == nil then
+        _technologies = {}
+        for tech_name, tech in pairs(game.technology_prototypes) do
+            table.insert(_technologies, tech.localised_name)
+        end
+    end
+    return _technologies
+end
+
+-- TODO: optimize
+local function CalculateWithOperation(value_1, value_2, operation)
+    if operation == OPERATION_TYPE_EQUAL then
+        return value_1 == value_2
+    elseif operation == OPERATION_TYPE_NOT_EQUAL then
+        return value_1 ~= value_2
+    elseif operation == OPERATION_TYPE_GREATER_THAN then
+        return value_1 > value_2
+    elseif operation == OPERATION_TYPE_LESS_THAN then
+        return value_1 < value_2
+    else
+        return false
+    end
+end
+
+-- TODO: optimize
+local function ClauseMatch(law, clause, type, target, force, player)
+    if clause.when_type == WHEN_THIS_LAW_PASSED and clause.base_clause then
+        return law.id == target
+    elseif clause.when_type == WHEN_DAY then
+        return IsDaytime()
+    elseif clause.when_type == WHEN_NIGHT then
+        return not IsDaytime()
+    elseif clause.when_type == WHEN_VALUE then
+        local value_1 = clause.when_value
+        local value_2 = clause.when_2_value
+        if clause.when_value_type == VALUE_TYPE_PERCENTAGE then
+            value_1 = CalculatePercentageValue(
+                value_1,
+                clause.when_value_percentage_type,
+                clause.when_value_percentage_item,
+                force,
+                player)
+        end
+        if clause.when_2_value_type == VALUE_TYPE_PERCENTAGE then
+            value_2 = CalculatePercentageValue(
+                value_2,
+                clause.when_2_value_percentage_type,
+                clause.when_2_value_percentage_item,
+                force,
+                player)
+        end
+        return CalculateWithOperation(value_1, value_2, clause.when_operation_type)
+    elseif clause.when_type == type then
+        if clause.when_type == WHEN_PLAYER_CHATS then
+            if string.match(target, clause.when_text) then
+                return true
+            end
+        elseif clause.when_type == WHEN_FORCE_RESEARCHES then
+            local tech = GetTechnologies()[clause.when_research]
+            if tech[1] == target[1] then
+                return true
+            end
+        elseif clause.when_type == WHEN_PLAYER_CRAFTS then
+            return clause.when_elem == target
+        else
+            if clause.when_entity_similar_type == true then
+                return game.entity_prototypes[target].type == game.entity_prototypes[clause.when_elem].type
+            else
+                return clause.when_elem == target
+            end
+        end
+    end
+    return false
+end
+
+local function LawMatch(type, target, force, player)
+    local matched_laws = {}
+    local ml_count = 0
+    for _, law in pairs(global.laws) do
+        if law.passed then
+            law.inverse_effects = false
+            local results = {}
+            local i_results = 0
+            for _, clause in pairs(law.clauses) do
+                local result = ClauseMatch(law, clause, type, target, force, player)
+                i_results = i_results + 1
+                results[i_results] = {
+                    success = result,
+                    logic = clause.base_clause and LOGIC_TYPE_BASE or clause.logic_type
+                }
+            end
+            if i_results == 1 and results[1].success then
+                ml_count = ml_count + 1
+                matched_laws[ml_count] = law
+            elseif i_results > 1 then
+                local state = results[1].success
+                for i = 2, i_results do
+                    local result = results[i]
+                    if result.logic == LOGIC_TYPE_AND then
+                        state = (state and result.success)
+                    elseif result.logic == LOGIC_TYPE_OR then
+                        if state then
+                            break
+                        else
+                            state = (state or result.success)
+                        end
+                    end
+                end
+                if state then
+                    ml_count = ml_count + 1
+                    matched_laws[ml_count] = law
+                end
+            end
+        end
+    end
+    return matched_laws
+end
+
+-- TODO: Optimize
+local function ExecuteEffect(law, effect, event)
+    local force = event.force
+    local player_index = event.player_index
+    local player = game.get_player(player_index)
+    local offence_count = law.offences[player_index]
+    local value = effect.effect_value
+    if value ~= nil and effect.effect_value_type == VALUE_TYPE_PERCENTAGE then
+        value = CalculatePercentageValue(
+            value,
+            effect.effect_value_percentage_type,
+            effect.effect_value_percentage_item,
+            force,
+            player
+        )
+    end
+
+    local effect_type = effect.effect_type
+    if effect_type == EFFECT_TYPE_NTH_OFFENCE then
+        event.stop_effects = (offence_count ~= effect.effect_nth_offence)
+        -- game.print(offence_count.." == "..effect.effect_nth_offence)
+    end
+
+    if event.stop_effects then
+        return
+    end
+
+    if effect_type == EFFECT_TYPE_RESET_OFFENCE then
+        law.offences[player_index] = 0
+    elseif effect_type == EFFECT_TYPE_REWARD then
+        if effect.effect_reward_type == EFFECT_REWARD_TYPE_ITEM then
+            player.insert{
+                name = effect.effect_reward_item,
+                count = floor(value)
+            }
+        elseif effect.effect_reward_type == EFFECT_REWARD_TYPE_MONEY then
+            EasyAPI.add_to_balance(force, value)
+        end
+    elseif effect_type == EFFECT_TYPE_FINE then
+        if effect.effect_fine_type == EFFECT_FINE_TYPE_INVENTORY then
+            event.fine_success = true
+            player.clear_items_inside()
+        elseif effect.effect_fine_type == EFFECT_FINE_TYPE_ITEM then
+            local count = player.get_item_count(effect.effect_fine_item)
+            event.fine_success = (count >= floor(value))
+            player.remove_item{
+                name = effect.effect_fine_item,
+                count = floor(value)
+            }
+        elseif effect.effect_fine_type == EFFECT_FINE_TYPE_MONEY then
+            local balance = EasyAPI.get_balance(force)
+            event.fine_success = (balance >= value)
+            EasyAPI.add_to_balance(force, -value)
+        end
+    elseif effect_type == EFFECT_TYPE_FINE_FAIL then
+        event.stop_effects = (event.fine_success == true or event.fine_success == nil)
+    elseif effect_type == EFFECT_TYPE_DISALLOW then
+        if event.item_stack and event.recipe then
+            Player.set_data(player, {
+                remove_item = event.item_stack
+            })
+            for _, ingredient in pairs(event.recipe.ingredients) do
+                player.insert{name = ingredient.name, count = ingredient.amount}
+            end
+        elseif event.research then
+            force.current_research = nil
+        elseif event.mined then
+            local entity = event.entity
+            player.surface.create_entity{
+                name = entity.name,
+                position = entity.position,
+                direction = entity.direction,
+                force = entity.force
+            }
+            -- buffer.clear() -- TODO: check
+        elseif event.built then
+            player.mine_entity(event.entity, true)
+        end
+    elseif effect_type == EFFECT_TYPE_ALERT then
+        local msg = effect.effect_text or ""
+        if player then
+            game.print({"lawful-evil.messages.player-triggered-a-law", player.name, msg})
+        elseif force then
+            game.print({"lawful-evil.messages.force-triggered-a-law", force.name, msg})
+        end
+    elseif effect_type == EFFECT_TYPE_KILL then
+        if player then
+            player.character.die(nil)
+        end
+    elseif effect_type == EFFECT_TYPE_KICK then
+        if player then
+            game.kick_player(player, "Broke the law: "..law.title)
+        end
+    elseif effect_type == EFFECT_TYPE_BAN then
+        if player then
+            game.ban_player(player, "Broke the law: "..law.title)
+        end
+    elseif effect_type == EFFECT_TYPE_MUTE then
+        if player then
+            game.mute_player(player)
+        end
+    elseif effect_type == EFFECT_TYPE_UNMUTE then
+        if player then
+            game.unmute_player(player)
+        end
+    elseif effect_type == EFFECT_TYPE_LICENSE and player then
+        local player_data = Player.get_data(player)
+        local effect_license_type = effect.effect_license_type
+        if effect_license_type == EFFECT_LICENSE_TYPE_CAR then
+            player_data.disallow_car = not effect.effect_license_state
+        elseif effect_license_type == EFFECT_LICENSE_TYPE_TANK then
+            player_data.disallow_tank = not effect.effect_license_state
+        elseif effect_license_type == EFFECT_LICENSE_TYPE_TRAIN then
+            player_data.disallow_locomotive = not effect.effect_license_state
+        elseif effect_license_type == EFFECT_LICENSE_TYPE_GUN then
+            player_data.disallow_gun = not effect.effect_license_state
+            if effect.effect_license_state then
+                game.permissions.get_group("no_shooting").remove_player(player)
+            else
+                game.permissions.get_group("no_shooting").add_player(player)
+            end
+        elseif effect_license_type == EFFECT_LICENSE_TYPE_ARTILLERY then
+            player_data.disallow_artillery = not effect.effect_license_state
+            if effect.effect_license_state then
+                game.permissions.get_group("no_artillery").remove_player(player)
+            else
+                game.permissions.get_group("no_artillery").add_player(player)
+            end
+        end
+        Player.set_data(player, player_data)
+    elseif effect_type == EFFECT_TYPE_REVOKE_LAW then
+        RevokeLaw(law)
+    elseif effect_type == EFFECT_TYPE_CUSTOM_SCRIPT and effect.script_text then
+        load(effect.script_text)()(event)
+    end
+end
+
+local function ExecuteLaws(laws, event)
+    local player_index = event.player_index
+    local player = game.get_player(player_index)
+    for _, law in pairs(laws) do
+        -- local clause = law.clauses[1] -- TODO: check
+
+        -- Apply offense count
+        if not law.offences then law.offences = {} end
+        if player and not event.all_players then
+            local count = law.offences[player_index]
+            if count then
+                law.offences[player_index] = count + 1
+            else
+                law.offences[player_index] = 1
+            end
+        end
+
+        for _, effect in pairs(law.effects) do
+            if event.all_players then
+                for _, _player in pairs(game.players) do
+                    ExecuteEffect(law, effect, {
+                        player_index = _player.index,
+                        force = _player.force
+                    })
+                end
+            else
+                ExecuteEffect(law, effect, event)
+            end
+        end
+    end
+end
+
 Event.register(defines.events.on_player_created, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     AddLawfulButton(player)
 end)
 
 Event.register(defines.events.on_console_chat, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     if not (player and player.valid) then return end
     local message = event.message
     local laws = LawMatch(WHEN_PLAYER_CHATS, message, player.force, player)
@@ -139,7 +543,7 @@ Event.register(defines.events.on_entity_damaged, function(event)
 end)
 
 Event.register(defines.events.on_built_entity, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     if player.controller_type == defines.controllers.editor then return end
 
     local laws = LawMatch(WHEN_PLAYER_BUILDS, event.created_entity.name, player.force, player)
@@ -150,7 +554,7 @@ Event.register(defines.events.on_built_entity, function(event)
 end)
 
 Event.register(defines.events.on_player_mined_entity, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     if player.controller_type == defines.controllers.editor then return end
 
     local laws = LawMatch(WHEN_PLAYER_MINES, event.entity.name, player.force, player)
@@ -160,7 +564,7 @@ Event.register(defines.events.on_player_mined_entity, function(event)
 end)
 
 Event.register(defines.events.on_player_crafted_item, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     if player.controller_type == defines.controllers.editor then return end
 
     local laws = LawMatch(WHEN_PLAYER_CRAFTS, event.item_stack.name, player.force, player)
@@ -169,7 +573,7 @@ Event.register(defines.events.on_player_crafted_item, function(event)
 end)
 
 Event.register(defines.events.on_player_built_tile, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     if player.controller_type == defines.controllers.editor then return end
 
     for _, tile in pairs(event.tiles) do
@@ -180,7 +584,7 @@ Event.register(defines.events.on_player_built_tile, function(event)
 end)
 
 Event.register(defines.events.on_player_mined_tile, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     if player.controller_type == defines.controllers.editor then return end
 
     for _, tile in pairs(event.tiles) do
@@ -208,20 +612,21 @@ Event.register(defines.events.on_rocket_launched, function(event)
 end)
 
 Event.register(defines.events.on_player_died, function(event)
-    if event.cause and event.cause.is_player() then
-        local laws = LawMatch(
-            WHEN_PLAYER_KILLS,
-            event.cause,
-            event.cause.force,
-            nil)
-        event.force = event.cause.force
-        event.player_index = event.cause.associated_player.index
-        ExecuteLaws(laws, event)
-    end
+    local cause = event.cause
+    if not (cause and cause.is_player()) then return end
+
+    local laws = LawMatch(
+        WHEN_PLAYER_KILLS,
+        cause,
+        cause.force,
+        nil)
+    event.force = cause.force
+    event.player_index = cause.associated_player.index
+    ExecuteLaws(laws, event)
 end)
 
 Event.register(defines.events.on_player_driving_changed_state, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     local player_data = Player.get_data(player)
     local vehicle = event.entity
     if vehicle then
@@ -239,16 +644,17 @@ Event.register(defines.events.on_player_driving_changed_state, function(event)
 end)
 
 Event.register(defines.events.on_player_respawned, function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     if not (player and player.valid) then return end
-    local laws = LawMatch(WHEN_PLAYER_RESPAWNS, message, player.force, player)
+
+    local laws = LawMatch(WHEN_PLAYER_RESPAWNS, message, player.force, player) -- TODO: check
     event.force = player.force
     ExecuteLaws(laws, event)
 end)
 
 script.on_nth_tick(3, function(event)
     -- Remove items (queued up via law effects)
-    for _, player in pairs(game.players) do -- TODO: change for connected players
+    for _, player in pairs(game.connected_players) do
         local data = Player.get_data(player)
         if data.remove_item then
             player.remove_item(data.remove_item)
@@ -256,6 +662,16 @@ script.on_nth_tick(3, function(event)
         end
     end
 end)
+
+local function RefreshAllLawfulEvilGui()
+    for _, player in pairs(game.players) do
+        local lawful_gui = player.gui.center["lawful_evil_gui"]
+        if lawful_gui then
+            lawful_gui.destroy()
+            CreateLawfulEvilGUI(player)
+        end
+    end
+end
 
 local function CheckVotes()
     for _, law in pairs(global.laws) do
@@ -281,7 +697,7 @@ local function CheckProductionRates()
         global.production_rates = {}
     end
 
-    for i, force in pairs(game.forces) do
+    for _, force in pairs(game.forces) do
         if not global.production_rates[force.name] then
             global.production_rates[force.name] = {
                 production = {},
@@ -290,8 +706,9 @@ local function CheckProductionRates()
         end
         local rates = global.production_rates[force.name]
         for item, count in pairs(force.item_production_statistics.input_counts) do
-            if rates.production[item] then
-                rates.production[item].rate = count - rates.production[item].last
+            local production = rates.production[item]
+            if production then
+                production.rate = count - production.last
             else
                 rates.production[item] = {
                     rate = 0,
@@ -300,8 +717,9 @@ local function CheckProductionRates()
             end
         end
         for item, count in pairs(force.item_production_statistics.output_counts) do
-            if rates.consumption[item] then
-                rates.consumption[item].rate = count - rates.consumption[item].last
+            local consumption = rates.consumption[item]
+            if consumption then
+                consumption.rate = count - consumption.last
             else
                 rates.consumption[item] = {
                     rate = 0,
@@ -318,12 +736,12 @@ script.on_nth_tick(3600, function(event)
 end)
 
 Gui.on_click("lawful_evil_button", function(event)
-    local player = Event.get_player(event)
-    local lawful_gui = GetLawfulEvilGui(player)
+    local player = game.get_player(event.player_index)
+    local lawful_gui = player.gui.center["lawful_evil_gui"]
     if lawful_gui then
         lawful_gui.destroy()
     else
-        local law_gui = GetLawGui(player)
+        local law_gui = player.gui.center["lawful_evil_law_gui"]
         if law_gui then
             law_gui.destroy()
         else
@@ -333,16 +751,16 @@ Gui.on_click("lawful_evil_button", function(event)
 end)
 
 Gui.on_click("close_lawful_gui", function(event)
-    local player = Event.get_player(event)
-    local lawful_gui = GetLawfulEvilGui(player)
+    local player = game.get_player(event.player_index)
+    local lawful_gui = player.gui.center["lawful_evil_gui"]
     if lawful_gui then
         lawful_gui.destroy()
     end
 end)
 
 Gui.on_click("propose_law", function(event)
-    local player = Event.get_player(event)
-    local lawful_gui = GetLawfulEvilGui(player)
+    local player = game.get_player(event.player_index)
+    local lawful_gui = player.gui.center["lawful_evil_gui"]
     if lawful_gui then
         lawful_gui.destroy()
     end
@@ -354,9 +772,22 @@ Gui.on_click("propose_law", function(event)
     })
 end)
 
+local function CreateSubClause()
+    return {
+        base_clause = false,
+        logic_type = LOGIC_TYPE_AND,
+        when_type = WHEN_VALUE,
+        when_value = 0,
+        when_value_type = VALUE_TYPE_FIXED,
+        when_2_value = 0,
+        when_2_value_type = VALUE_TYPE_FIXED,
+        when_operation_type = OPERATION_TYPE_EQUAL
+    }
+end
+
 Gui.on_click("add_clause", function(event)
-    local player = Event.get_player(event)
-    local law_gui = GetLawGui(player)
+    local player = game.get_player(event.player_index)
+    local law_gui = player.gui.center["lawful_evil_law_gui"]
     if law_gui then
         local subclause = CreateSubClause()
         CreateClauseGUI(law_gui.clauses_frame.clauses, subclause)
@@ -365,8 +796,8 @@ Gui.on_click("add_clause", function(event)
 end)
 
 Gui.on_click("add_effect", function(event)
-    local player = Event.get_player(event)
-    local law_gui = GetLawGui(player)
+    local player = game.get_player(event.player_index)
+    local law_gui = player.gui.center["lawful_evil_law_gui"]
     if law_gui then
         local effect = {
             base_effect = false,
@@ -380,8 +811,8 @@ Gui.on_click("add_effect", function(event)
 end)
 
 Gui.on_click("delete_.+", function(event)
-    local player = Event.get_player(event)
-    local law_gui = GetLawGui(player)
+    local player = game.get_player(event.player_index)
+    local law_gui = player.gui.center["lawful_evil_law_gui"]
     local elem = event.element
     if law_gui then
         elem.parent.destroy()
@@ -390,18 +821,18 @@ Gui.on_click("delete_.+", function(event)
 end)
 
 Gui.on_click("vote_law_([0-9]+)", function(event)
-    local player = Event.get_player(event)
-    local law_gui = GetLawfulEvilGui(player)
+    local player = game.get_player(event.player_index)
+    local law_gui = player.gui.center["lawful_evil_gui"]
     if law_gui then
         law_gui.destroy()
     else
-        law_gui = GetLawGui(player)
+        law_gui = player.gui.center["lawful_evil_law_gui"]
         if law_gui then
             law_gui.destroy()
         end
     end
     local law_id = tonumber(event.match)
-    local law = GetLaw(law_id)
+    local law = global.laws[law_id]
     if law then
         CreateLawGUI({
             player = player,
@@ -413,18 +844,18 @@ Gui.on_click("vote_law_([0-9]+)", function(event)
 end)
 
 Gui.on_click("view_law_([0-9]+)", function(event)
-    local player = Event.get_player(event)
-    local law_gui = GetLawfulEvilGui(player)
+    local player = game.get_player(event.player_index)
+    local law_gui = player.gui.center["lawful_evil_gui"]
     if law_gui then
         law_gui.destroy()
     else
-        law_gui = GetLawGui(player)
+        law_gui = player.gui.center["lawful_evil_law_gui"]
         if law_gui then
             law_gui.destroy()
         end
     end
     local law_id = tonumber(event.match)
-    local law = GetLaw(law_id)
+    local law = global.laws[law_id]
     if law then
         CreateLawGUI({
             player = player,
@@ -438,9 +869,9 @@ end)
 function ParseVoteEvent(event)
     local law_index = tonumber(event.match)
     return {
-        player = Event.get_player(event),
+        player = game.get_player(event.player_index),
         law_index = law_index,
-        law = GetLaw(law_index)
+        law = global.laws[law_index]
     }
 end
 
@@ -463,13 +894,13 @@ Gui.on_click("revoke_law_([0-9]+)", function(event)
 end)
 
 Gui.on_click("close_law", function(event)
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     CloseLawGui(player)
 end)
 
 Gui.on_click("submit_law", function(event)
-    local player = Event.get_player(event)
-    local gui = GetLawGui(player)
+    local player = game.get_player(event.player_index)
+    local gui = player.gui.center["lawful_evil_law_gui"]
     if gui then
         local law = SaveLaw(gui)
         game.print({"lawful-evil.messages.law-is-submitted", law.title})
@@ -481,7 +912,8 @@ end)
 
 Gui.on_selection_state_changed("when_elem_type", function(event)
     local elem = event.element
-    local law = GetLaw()
+    -- local law = global.laws[] -- TODO: check
+    local law = nil
     if law.when_elem_type ~= elem.selected_index then
         law.when_elem = nil
     end
@@ -490,16 +922,16 @@ end)
 
 Gui.on_selection_state_changed(".+", function(event)
     local elem = event.element
-    local player = Event.get_player(event)
+    local player = game.get_player(event.player_index)
     if elem.parent.parent.name == "clauses" then
-        local gui = GetLawGui(player)
+        local gui = player.gui.center["lawful_evil_law_gui"]
         local law = SaveLaw(gui)
         gui.clauses_frame.clauses.clear()
         for _, clause in pairs(law.clauses) do
             CreateClauseGUI(gui.clauses_frame.clauses, clause)
         end
     elseif elem.parent.parent.name == "effects" then
-        local gui = GetLawGui(player)
+        local gui = player.gui.center["lawful_evil_law_gui"]
         local law = SaveLaw(gui)
         gui.effects_frame.effects.clear()
         for _, effect in pairs(law.effects) do
@@ -507,11 +939,6 @@ Gui.on_selection_state_changed(".+", function(event)
         end
     end
 end)
-
-function IsDaytime()
-    local surface = game.surfaces[1]
-    return not (surface.daytime > surface.evening and surface.daytime < surface.morning)
-end
 
 function GetNewLaw(player)
     global.last_id = global.last_id + 1
@@ -541,11 +968,7 @@ function GetNewLaw(player)
     }
 end
 
-function GetLaw(index)
-    return global.laws[index]
-end
-
-function GetLawById(id)
+local function GetLawById(id)
     for _, law in pairs(global.laws) do
         if law.id == id then
             return law
@@ -553,17 +976,113 @@ function GetLawById(id)
     end
 end
 
-function CreateSubClause()
-    return {
-        base_clause = false,
-        logic_type = LOGIC_TYPE_AND,
-        when_type = WHEN_VALUE,
-        when_value = 0,
-        when_value_type = VALUE_TYPE_FIXED,
-        when_2_value = 0,
-        when_2_value_type = VALUE_TYPE_FIXED,
-        when_operation_type = OPERATION_TYPE_EQUAL
-    }
+local function GetClauseTypes(logic_type)
+    local collected_types = {}
+    local ct_count = 0
+    for id, type in pairs(CLAUSE_TYPES) do
+        if  (type.base_allowed and logic_type == LOGIC_TYPE_BASE)
+            or (type.and_allowed and logic_type == LOGIC_TYPE_AND)
+            or (type.or_allowed and logic_type == LOGIC_TYPE_OR)
+        then
+            ct_count = ct_count + 1
+            collected_types[ct_count] = id
+        end
+    end
+    table.sort(collected_types, function(a,b)
+        return CLAUSE_TYPES[a].order < CLAUSE_TYPES[b].order
+    end)
+    return collected_types
+end
+
+local function SaveClause(gui, law, clause)
+    if not gui.when_type then
+        return nil
+    end
+    if gui.logic_type then
+        clause.logic_type = gui.logic_type.selected_index
+    else
+        clause.logic_type = LOGIC_TYPE_BASE
+    end
+    clause.when_type = GetClauseTypes(clause.logic_type)[gui.when_type.selected_index]
+    if gui.when_value then
+        clause.when_value = tonumber(gui.when_value.text) or 0
+        clause.when_value_type = gui.when_value_type.selected_index
+        if gui.when_value_percentage_type then
+            clause.when_value_percentage_type = gui.when_value_percentage_type.selected_index
+            if gui.when_value_percentage_item then
+                clause.when_value_percentage_item = gui.when_value_percentage_item.elem_value
+            end
+        end
+        clause.when_operation_type = gui.when_operation_type.selected_index
+        clause.when_2_value = tonumber(gui.when_2_value.text) or 0
+        clause.when_2_value_type = gui.when_2_value_type.selected_index
+        if gui.when_2_value_percentage_type then
+            clause.when_2_value_percentage_type = gui.when_2_value_percentage_type.selected_index
+            if gui.when_2_value_percentage_item then
+                clause.when_2_value_percentage_item = gui.when_2_value_percentage_item.elem_value
+            end
+        end
+    end
+    if gui.when_entity_similar_type then
+        clause.when_entity_similar_type = gui.when_entity_similar_type.state
+    end
+    if gui.when_elem then
+        clause.when_elem = gui.when_elem.elem_value
+    end
+    if gui.when_research then
+        clause.when_research = gui.when_research.selected_index
+    end
+    if gui.when_text then
+        clause.when_text = gui.when_text.text
+    end
+    return clause
+end
+
+local function SaveEffect(gui, effect, player)
+    local effect_type = gui.effect_type.selected_index
+    effect.effect_type = effect_type
+    if gui.effect_value then
+        effect.effect_value = tonumber(gui.effect_value.text) or 0
+        effect.effect_value_type = gui.effect_value_type.selected_index
+        if gui.effect_value_percentage_type then
+            effect.effect_value_percentage_type = gui.effect_value_percentage_type.selected_index
+            if gui.effect_value_percentage_item then
+                effect.effect_value_percentage_item = gui.effect_value_percentage_item.elem_value
+            end
+        end
+    else
+        effect.effect_value = 0
+    end
+    if gui.effect_fine_type then
+        effect.effect_fine_type = gui.effect_fine_type.selected_index
+        if gui.effect_fine_item then
+            effect.effect_fine_item = gui.effect_fine_item.elem_value
+        end
+    end
+    if gui.effect_reward_type then
+        effect.effect_reward_type = gui.effect_reward_type.selected_index
+        if gui.effect_reward_item then
+            effect.effect_reward_item = gui.effect_reward_item.elem_value
+        end
+    end
+    if gui.effect_text then
+        effect.effect_text = gui.effect_text.text
+    elseif gui.parent.script_text then
+        local script = load(gui.parent.script_text.text)
+        if type(script) == "function" then
+            effect.script_text = gui.parent.script_text.text
+        else
+            player.print("Added custom script doesn't compile in the law")
+        end
+    end
+    if gui.effect_license_type and gui.effect_license_state then
+        effect.effect_license_type = gui.effect_license_type.selected_index
+        effect.effect_license_state = gui.effect_license_state.state
+    end
+    if gui.effect_nth_offence then
+        effect.effect_nth_offence = tonumber(gui.effect_nth_offence.text) or 1
+    end
+    return effect
 end
 
 function SaveLaw(gui)
@@ -616,480 +1135,8 @@ function SaveLaw(gui)
     return law
 end
 
-function SaveClause(gui, law, clause)
-    if not gui.when_type then
-        return nil
-    end
-    if gui.logic_type then
-        clause.logic_type = gui.logic_type.selected_index
-    else
-        clause.logic_type = LOGIC_TYPE_BASE
-    end
-    clause.when_type = GetClauseTypes(clause.logic_type)[gui.when_type.selected_index]
-    if gui.when_value then
-        clause.when_value = tonumber(gui.when_value.text) or 0
-        clause.when_value_type = gui.when_value_type.selected_index
-        if gui.when_value_percentage_type then
-            clause.when_value_percentage_type = gui.when_value_percentage_type.selected_index
-            if gui.when_value_percentage_item then
-                clause.when_value_percentage_item = gui.when_value_percentage_item.elem_value
-            end
-        end
-        clause.when_operation_type = gui.when_operation_type.selected_index
-        clause.when_2_value = tonumber(gui.when_2_value.text) or 0
-        clause.when_2_value_type = gui.when_2_value_type.selected_index
-        if gui.when_2_value_percentage_type then
-            clause.when_2_value_percentage_type = gui.when_2_value_percentage_type.selected_index
-            if gui.when_2_value_percentage_item then
-                clause.when_2_value_percentage_item = gui.when_2_value_percentage_item.elem_value
-            end
-        end
-    end
-    if gui.when_entity_similar_type then
-        clause.when_entity_similar_type = gui.when_entity_similar_type.state
-    end
-    if gui.when_elem then
-        clause.when_elem = gui.when_elem.elem_value
-    end
-    if gui.when_research then
-        clause.when_research = gui.when_research.selected_index
-    end
-    if gui.when_text then
-        clause.when_text = gui.when_text.text
-    end
-    return clause
-end
-
-function SaveEffect(gui, effect, player)
-    local effect_type = gui.effect_type.selected_index
-    effect.effect_type = effect_type
-    if gui.effect_value then
-        effect.effect_value = tonumber(gui.effect_value.text) or 0
-        effect.effect_value_type = gui.effect_value_type.selected_index
-        if gui.effect_value_percentage_type then
-            effect.effect_value_percentage_type = gui.effect_value_percentage_type.selected_index
-            if gui.effect_value_percentage_item then
-                effect.effect_value_percentage_item = gui.effect_value_percentage_item.elem_value
-            end
-        end
-    else
-        effect.effect_value = 0
-    end
-    if gui.effect_fine_type then
-        effect.effect_fine_type = gui.effect_fine_type.selected_index
-        if gui.effect_fine_item then
-            effect.effect_fine_item = gui.effect_fine_item.elem_value
-        end
-    end
-    if gui.effect_reward_type then
-        effect.effect_reward_type = gui.effect_reward_type.selected_index
-        if gui.effect_reward_item then
-            effect.effect_reward_item = gui.effect_reward_item.elem_value
-        end
-    end
-    if gui.effect_text then
-        effect.effect_text = gui.effect_text.text
-    elseif gui.parent.script_text then
-        local script = loadstring(gui.parent.script_text.text)
-        if type(script) == "function" then
-            effect.script_text = gui.parent.script_text.text
-        else
-            player.print("Added custom script doesn't compile in the law")
-        end
-    end
-    if gui.effect_license_type and gui.effect_license_state then
-        effect.effect_license_type = gui.effect_license_type.selected_index
-        effect.effect_license_state = gui.effect_license_state.state
-    end
-    if gui.effect_nth_offence then
-        effect.effect_nth_offence = tonumber(gui.effect_nth_offence.text) or 1
-    end
-    return effect
-end
-
-function LawMatch(type, target, force, player)
-    local matched_laws = {}
-    for _, law in pairs(global.laws) do
-        if law.passed then
-            law.inverse_effects = false
-            local results = {}
-            for _, clause in pairs(law.clauses) do
-                local result = ClauseMatch(law, clause, type, target, force, player)
-                table.insert(results, {
-                    success = result,
-                    logic = clause.base_clause and LOGIC_TYPE_BASE or clause.logic_type
-                })
-            end
-            if #results == 1 and results[1].success then
-                table.insert( matched_laws, law )
-            end
-            if #results > 1 then
-                local state = results[1].success
-                for i = 2, #results do
-                    if results[i].logic == LOGIC_TYPE_AND then
-                        state = (state and results[i].success)
-                    elseif results[i].logic == LOGIC_TYPE_OR then
-                        if state then
-                            break
-                        else
-                            state = (state or results[i].success)
-                        end
-                    end
-                end
-                if state then
-                    table.insert( matched_laws, law )
-                end
-            end
-        end
-    end
-    return matched_laws
-end
-
-function ClauseMatch(law, clause, type, target, force, player)
-    if clause.when_type == WHEN_THIS_LAW_PASSED and clause.base_clause then
-        return law.id == target
-    elseif clause.when_type == WHEN_DAY then
-        return IsDaytime()
-    elseif clause.when_type == WHEN_NIGHT then
-        return not IsDaytime()
-    elseif clause.when_type == WHEN_VALUE then
-        local value_1 = clause.when_value
-        local value_2 = clause.when_2_value
-        if clause.when_value_type == VALUE_TYPE_PERCENTAGE then
-            value_1 = CalculatePercentageValue(
-                value_1,
-                clause.when_value_percentage_type,
-                clause.when_value_percentage_item,
-                force,
-                player)
-        end
-        if clause.when_2_value_type == VALUE_TYPE_PERCENTAGE then
-            value_2 = CalculatePercentageValue(
-                value_2,
-                clause.when_2_value_percentage_type,
-                clause.when_2_value_percentage_item,
-                force,
-                player)
-        end
-        return CalculateWithOperation(value_1, value_2, clause.when_operation_type)
-    elseif clause.when_type == type then
-        if clause.when_type == WHEN_PLAYER_CHATS then
-            if string.match(target, clause.when_text) then
-                return true
-            end
-        elseif clause.when_type == WHEN_FORCE_RESEARCHES then
-            local tech = GetTechnologies()[clause.when_research]
-            if tech[1] == target[1] then
-                return true
-            end
-        elseif clause.when_type == WHEN_PLAYER_CRAFTS then
-            return clause.when_elem == target
-        else
-            if clause.when_entity_similar_type == true then
-                return game.entity_prototypes[target].type == game.entity_prototypes[clause.when_elem].type
-            else
-                return clause.when_elem == target
-            end
-        end
-    end
-    return false
-end
-
-function CalculatePercentageValue(value, type, item, force, player)
-    local factor = value * 0.01
-    if type == PERCENTAGE_TYPE_BALANCE then
-        return EasyAPI.get_balance(force) * factor
-    elseif type == PERCENTAGE_TYPE_PLAYER_COUNT then
-        local count = 0
-        for _, tech in pairs(game.players) do count = count + 1 end
-        return count * factor
-    elseif type == PERCENTAGE_TYPE_FORCE_PLAYER_COUNT then
-        return #force.players * factor
-    elseif type == PERCENTAGE_TYPE_EVOLUTION_FACTOR then
-        return force.evolution_factor * factor
-    elseif type == PERCENTAGE_TYPE_ROCKETS_LAUNCHED then
-        return force.rockets_launched * factor
-    elseif type == PERCENTAGE_TYPE_TOTAL_PRODUCTION then
-        if item then
-            return force.item_production_statistics.get_input_count(item) * factor
-        else
-            return 0
-        end
-    elseif type == PERCENTAGE_TYPE_RATE_PRODUCTION then
-        if item and global.production_rates then
-            if global.production_rates[force.name].production[item] then
-                return global.production_rates[force.name].production[item].rate
-            end
-        end
-        return 0
-    elseif type == PERCENTAGE_TYPE_TOTAL_CONSUMPTION then
-        if item then
-            return force.item_production_statistics.get_output_count(item) * factor
-        else
-            return 0
-        end
-    elseif type == PERCENTAGE_TYPE_RATE_CONSUMPTION then
-        if item and global.production_rates then
-            if global.production_rates[force.name].consumption[item] then
-                return global.production_rates[force.name].consumption[item].rate
-            end
-        end
-        return 0
-    elseif type == PERCENTAGE_TYPE_TECHNOLOGIES_RESEARCHED then
-        local count = 0
-        for _, tech in pairs(force.technologies) do count = count + 1 end
-        return count * factor
-    elseif type == PERCENTAGE_TYPE_TRAINS then
-        local count = 0
-        for _, _force in pairs(game.forces) do
-            count = count + #_force.get_trains()
-        end
-        return count * factor
-    elseif type == PERCENTAGE_TYPE_FORCE_TRAINS then
-        return #force.get_trains() * factor
-    elseif type == PERCENTAGE_TYPE_CONSTRUCTION_ROBOTS then
-        local count = 0
-        for _, _force in pairs(game.forces) do
-            for _, network in pairs(_force.logistic_networks) do
-                count = count + network.all_construction_robots
-            end
-        end
-        return count * factor
-    elseif type == PERCENTAGE_TYPE_FORCE_CONSTRUCTION_ROBOTS then
-        local count = 0
-        for _, network in pairs(force.logistic_networks) do
-            count = count + network.all_construction_robots
-        end
-        return count * factor
-    elseif type == PERCENTAGE_TYPE_LOGISTIC_ROBOTS then
-        local count = 0
-        for _, _force in pairs(game.forces) do
-            for _, network in pairs(_force.logistic_networks) do
-                count = count + network.all_logistic_robots
-            end
-        end
-        return count * factor
-    elseif type == PERCENTAGE_TYPE_FORCE_LOGISTIC_ROBOTS then
-        local count = 0
-        for _, network in pairs(force.logistic_networks) do
-            count = count + network.all_logistic_robots
-        end
-        return count * factor
-    elseif type == PERCENTAGE_TYPE_PLAYER_TIME_ONLINE then
-        if player then
-            return player.online_time * factor
-        else
-            return 0
-        end
-    elseif type == PERCENTAGE_TYPE_PLAYER_TIME_AFK then
-        if player then
-            return player.afk_time * factor
-        else
-            return 0
-        end
-    elseif type == PERCENTAGE_TYPE_GAME_TICK then
-        return game.tick * factor
-    elseif type == PERCENTAGE_TYPE_DAYTIME then
-        return game.surfaces[1].daytime * factor
-    end
-end
-
-function CalculateWithOperation(value_1, value_2, operation)
-    if operation == OPERATION_TYPE_EQUAL then
-        return value_1 == value_2
-    elseif operation == OPERATION_TYPE_NOT_EQUAL then
-        return value_1 ~= value_2
-    elseif operation == OPERATION_TYPE_GREATER_THAN then
-        return value_1 > value_2
-    elseif operation == OPERATION_TYPE_LESS_THAN then
-        return value_1 < value_2
-    else
-        return false
-    end
-end
-
-function ExecuteLaws(laws, event)
-    for i, law in pairs(laws) do
-        local clause = law.clauses[1]
-
-        -- Apply offense count
-        if not law.offences then law.offences = {} end
-        local player = Event.get_player(event)
-        if player and not event.all_players then
-            local count = law.offences[event.player_index]
-            if count then
-                law.offences[event.player_index] = count + 1
-            else
-                law.offences[event.player_index] = 1
-            end
-        end
-
-        for i, effect in pairs(law.effects) do
-            if event.all_players then
-                for _, player in pairs(game.players) do
-                    ExecuteEffect(law, effect, {
-                        player_index = player.index,
-                        force = player.force
-                    })
-                end
-            else
-                ExecuteEffect(law, effect, event)
-            end
-        end
-    end
-end
-
-function ExecuteEffect(law, effect, event)
-    local force = event.force
-    local player = Event.get_player(event)
-    local offence_count = law.offences[event.player_index]
-    local value = effect.effect_value
-    if value ~= nil and effect.effect_value_type == VALUE_TYPE_PERCENTAGE then
-        value = CalculatePercentageValue(
-            value,
-            effect.effect_value_percentage_type,
-            effect.effect_value_percentage_item,
-            force,
-            player)
-    end
-
-    if effect.effect_type == EFFECT_TYPE_NTH_OFFENCE then
-        event.stop_effects = (offence_count ~= effect.effect_nth_offence)
-        -- game.print(offence_count.." == "..effect.effect_nth_offence)
-    end
-
-    if event.stop_effects then
-        return
-    end
-
-    if effect_type == EFFECT_TYPE_RESET_OFFENCE then
-        law.offences[event.player_index] = 0
-    elseif effect.effect_type == EFFECT_TYPE_REWARD then
-        if effect.effect_reward_type == EFFECT_REWARD_TYPE_ITEM then
-            player.insert{
-                name = effect.effect_reward_item,
-                count = math.floor(value)
-            }
-        elseif effect.effect_reward_type == EFFECT_REWARD_TYPE_MONEY then
-            EasyAPI.add_to_balance(force, value)
-        end
-    elseif effect.effect_type == EFFECT_TYPE_FINE then
-        if effect.effect_fine_type == EFFECT_FINE_TYPE_INVENTORY then
-            event.fine_success = true
-            player.clear_items_inside()
-        elseif effect.effect_fine_type == EFFECT_FINE_TYPE_ITEM then
-            local count = player.get_item_count(effect.effect_fine_item)
-            event.fine_success = (count >= math.floor(value))
-            player.remove_item{
-                name = effect.effect_fine_item,
-                count = math.floor(value)
-            }
-        elseif effect.effect_fine_type == EFFECT_FINE_TYPE_MONEY then
-            local balance = EasyAPI.get_balance(force)
-            event.fine_success = (balance >= value)
-            EasyAPI.add_to_balance(force, -value)
-        end
-    elseif effect.effect_type == EFFECT_TYPE_FINE_FAIL then
-        event.stop_effects = (event.fine_success == true or event.fine_success == nil)
-    elseif effect.effect_type == EFFECT_TYPE_DISALLOW then
-        if event.item_stack and event.recipe then
-            Player.set_data(player, {
-                remove_item = event.item_stack
-            })
-            for _, ingredient in pairs(event.recipe.ingredients) do
-                player.insert{name = ingredient.name, count = ingredient.amount}
-            end
-        elseif event.research then
-            force.current_research = nil
-        elseif event.mined then
-            player.surface.create_entity{
-                name = event.entity.name,
-                position = event.entity.position,
-                direction = event.entity.direction,
-                force = event.entity.force
-            }
-            buffer.clear()
-        elseif event.built then
-            player.mine_entity(event.entity, true)
-        end
-    elseif effect.effect_type == EFFECT_TYPE_ALERT then
-        local msg = effect.effect_text or ""
-        if player then
-            game.print({"lawful-evil.messages.player-triggered-a-law", player.name, msg})
-        elseif force then
-            game.print({"lawful-evil.messages.force-triggered-a-law", force.name, msg})
-        end
-    elseif effect.effect_type == EFFECT_TYPE_KILL then
-        if player then
-            player.character.die(nil)
-        end
-    elseif effect.effect_type == EFFECT_TYPE_KICK then
-        if player then
-            game.kick_player(player, "Broke the law: "..law.title)
-        end
-    elseif effect.effect_type == EFFECT_TYPE_BAN then
-        if player then
-            game.ban_player(player, "Broke the law: "..law.title)
-        end
-    elseif effect.effect_type == EFFECT_TYPE_MUTE then
-        if player then
-            game.mute_player(player)
-        end
-    elseif effect.effect_type == EFFECT_TYPE_UNMUTE then
-        if player then
-            game.unmute_player(player)
-        end
-    elseif effect.effect_type == EFFECT_TYPE_LICENSE and player then
-        local player_data = Player.get_data(player)
-        if effect.effect_license_type == EFFECT_LICENSE_TYPE_CAR then
-            player_data.disallow_car = not effect.effect_license_state
-        elseif effect.effect_license_type == EFFECT_LICENSE_TYPE_TANK then
-            player_data.disallow_tank = not effect.effect_license_state
-        elseif effect.effect_license_type == EFFECT_LICENSE_TYPE_TRAIN then
-            player_data.disallow_locomotive = not effect.effect_license_state
-        elseif effect.effect_license_type == EFFECT_LICENSE_TYPE_GUN then
-            player_data.disallow_gun = not effect.effect_license_state
-            if effect.effect_license_state then
-                game.permissions.get_group("no_shooting").remove_player(player)
-            else
-                game.permissions.get_group("no_shooting").add_player(player)
-            end
-        elseif effect.effect_license_type == EFFECT_LICENSE_TYPE_ARTILLERY then
-            player_data.disallow_artillery = not effect.effect_license_state
-            if effect.effect_license_state then
-                game.permissions.get_group("no_artillery").remove_player(player)
-            else
-                game.permissions.get_group("no_artillery").add_player(player)
-            end
-        end
-        Player.set_data(player, player_data)
-    elseif effect.effect_type == EFFECT_TYPE_REVOKE_LAW then
-        RevokeLaw(law)
-    elseif effect.effect_type == EFFECT_TYPE_CUSTOM_SCRIPT and effect.script_text then
-        loadstring(effect.script_text)()(event)
-    end
-end
-
-function GetLawfulEvilGui(player)
-    return player.gui.center["lawful_evil_gui"]
-end
-
-function GetLawGui(player)
-    return player.gui.center["lawful_evil_law_gui"]
-end
-
-function RefreshAllLawfulEvilGui()
-    for _, player in pairs(game.players) do
-        local lawful_gui = GetLawfulEvilGui(player)
-        if lawful_gui then
-            lawful_gui.destroy()
-            CreateLawfulEvilGUI(player)
-        end
-    end
-end
-
 function CloseLawGui(player)
-    local gui = GetLawGui(player)
+    local gui = player.gui.center["lawful_evil_law_gui"]
     if gui then
         gui.destroy()
         CreateLawfulEvilGUI(player)
@@ -1165,55 +1212,30 @@ function GetLawRevokeVotes(law)
     return revoke_count
 end
 
-local _technologies = nil
-function GetTechnologies()
-    if _technologies == nil then
-        _technologies = {}
-        for tech_name, tech in pairs(game.technology_prototypes) do
-            table.insert(_technologies, tech.localised_name)
-        end
-    end
-    return _technologies
-end
-
+-- TODO: check
 local _entity_types = nil
 function GetEntityTypes()
     if _entity_types == nil then
         _entity_types = {}
         local type_map = {}
         for name, entity in pairs(game.entity_prototypes) do
-            if not type_map[entity.type] then
-                type_map[entity.type] = 1
+            local type = entity.type
+            if not type_map[type] then
+                type_map[type] = 1
             else
-                type_map[entity.type] = type_map[entity.type] + 1
+                type_map[type] = type_map[type] + 1
             end
         end
         for type, count in pairs(type_map) do
             if count > 1 then
-                table.insert(_entity_types, type)
+                _entity_types[#_entity_types + 1] = type
             end
         end
     end
     return _entity_types
 end
 
-function GetClauseTypes(logic_type)
-    local collected_types = {}
-    for id, type in pairs(CLAUSE_TYPES) do
-        if  (type.base_allowed and logic_type == LOGIC_TYPE_BASE)
-            or (type.and_allowed and logic_type == LOGIC_TYPE_AND)
-            or (type.or_allowed and logic_type == LOGIC_TYPE_OR)
-            then
-                table.insert(collected_types, id)
-        end
-    end
-    table.sort(collected_types, function(a,b)
-        return CLAUSE_TYPES[a].order < CLAUSE_TYPES[b].order
-    end)
-    return collected_types
-end
-
-function GetClauseIndexByID(clause_type_id, clause_types)
+local function GetClauseIndexByID(clause_type_id, clause_types)
     if clause_type_id ~= nil then
         for i, id in pairs(clause_types) do
             if id == clause_type_id then
@@ -1254,9 +1276,9 @@ function CreateLawfulEvilGUI(player)
     for i, law in pairs(global.laws) do
         law.index = i
         if law.passed then
-            table.insert(passed_laws, law)
+            passed_laws[#passed_laws + 1] = law
         else
-            table.insert(proposed_laws, law)
+            proposed_laws[#proposed_laws + 1] = law
         end
     end
 
@@ -1358,7 +1380,7 @@ function CreateLawfulEvilGUI(player)
         local voting_mins_left = 1
         local voting_ticks_left = law.vote_end_tick - game.tick
         if voting_ticks_left > 3600 then
-            voting_mins_left = math.ceil((voting_ticks_left) / 3600)
+            voting_mins_left = ceil((voting_ticks_left) / 3600)
         end
         local meta_flow = law_frame.add{
             type = "flow",
@@ -1473,10 +1495,10 @@ function CreateLawGUI(event)
     effects_gui.style.minimal_width = clauses_frame.style.minimal_width
     effects_gui.style.maximal_height = 200
 
-    for i, clause in pairs(law.clauses) do
+    for _, clause in pairs(law.clauses) do
         CreateClauseGUI(clauses_gui, clause, read_only)
     end
-    for i, effect in pairs(law.effects) do
+    for _, effect in pairs(law.effects) do
         CreateEffectGUI(effects_gui, effect, read_only)
     end
 
@@ -1505,7 +1527,7 @@ function CreateLawGUI(event)
         local i = 2
         for _, law in pairs(global.laws) do
             if not law.passed then
-                table.insert(options, law.title)
+                options[options+1] = law.title
                 options_indexed[law.id] = i
                 i = i + 1
             end
