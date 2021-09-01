@@ -436,10 +436,14 @@ end
 
 local function ExecuteLaws(laws, event)
     local player_index = event.player_index
-    local player = game.get_player(player_index)
+	local player
+    if player_index then
+        player = game.get_player(player_index) -- TODO: change
+    end
     for _, law in pairs(laws) do
         -- local clause = law.clauses[1] -- TODO: check
 
+        -- TODO: Optimize
         -- Apply offense count
         if not law.offences then law.offences = {} end
         if player and not event.all_players then
