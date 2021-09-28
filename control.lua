@@ -4,13 +4,299 @@ require 'stdlib/event/event'
 require 'stdlib/gui/gui'
 require 'stdlib/player'
 require 'stdlib/game'
-require 'mpt'
-require 'mod-defines'
 local mod_gui = require("mod-gui")
 
 
+local WHEN_PLAYER_BUILDS = "player-builds"
+local WHEN_PLAYER_MINES = "player-mines"
+local WHEN_PLAYER_DAMAGES = "player-damages"
+local WHEN_PLAYER_DESTROYS = "player-destroys"
+local WHEN_PLAYER_CRAFTS = "player-crafts"
+local WHEN_PLAYER_TILES = "player-tiles"
+local WHEN_PLAYER_MINES_TILE = "player-mines-tiles"
+local WHEN_PLAYER_KILLS = "player-kills-player"
+local WHEN_FORCE_RESEARCHES = "force-researches"
+local WHEN_ROCKET_LAUNCHES = "rocket-launched"
+local WHEN_PLAYER_CHATS = "player-chats"
+local WHEN_PLAYER_RESPAWNS = "player-respawns"
+local WHEN_THIS_LAW_PASSED = "this-law-passed"
+local WHEN_VALUE = "value"
+local WHEN_DAY = "daytime"
+local WHEN_NIGHT = "nighttime"
+
+local CLAUSE_TYPES = {
+    [WHEN_PLAYER_BUILDS] = {
+        localised_text = "a player builds",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "a",
+        has_elem_picker = true,
+        elem_picker_type = "entity",
+        inverse_rule = WHEN_PLAYER_MINES
+    },
+    [WHEN_PLAYER_MINES] = {
+        localised_text = "a player mines",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "b",
+        has_elem_picker = true,
+        elem_picker_type = "entity",
+        inverse_rule = WHEN_PLAYER_BUILDS
+    },
+    [WHEN_PLAYER_DAMAGES] = {
+        localised_text = "a player damages",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        has_elem_picker = true,
+        elem_picker_type = "entity",
+        order = "c"
+    },
+    [WHEN_PLAYER_DESTROYS] = {
+        localised_text = "a player destroys",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        has_elem_picker = true,
+        elem_picker_type = "entity",
+        order = "d"
+    },
+    [WHEN_PLAYER_CRAFTS] = {
+        localised_text = "a player destroys",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        has_elem_picker = true,
+        elem_picker_type = "item",
+        order = "e"
+    },
+    [WHEN_PLAYER_TILES] = {
+        localised_text = "a player tiles",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "fa",
+        has_elem_picker = true,
+        elem_picker_type = "item",
+        inverse_rule = WHEN_PLAYER_MINES_TILE
+    },
+    [WHEN_PLAYER_MINES_TILE] = {
+        localised_text = "a player mines tiles",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "fb",
+        has_elem_picker = true,
+        elem_picker_type = "item",
+        inverse_rule = WHEN_PLAYER_TILES
+    },
+    [WHEN_PLAYER_KILLS] = {
+        localised_text = "a player kills a player",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "g"
+    },
+    [WHEN_PLAYER_CHATS] = {
+        localised_text = "a player chats",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "ha"
+    },
+    [WHEN_FORCE_RESEARCHES] = {
+        localised_text = "force researches",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "hb"
+    },
+    [WHEN_ROCKET_LAUNCHES] = {
+        localised_text = "a rocket is launched",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "i"
+    },
+    [WHEN_THIS_LAW_PASSED] = {
+        localised_text = "this law is passed",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "j"
+    },
+    [WHEN_VALUE] = {
+        localised_text = "a value",
+        base_allowed = false,
+        and_allowed = true,
+        or_allowed = true,
+        order = "k"
+    },
+    [WHEN_DAY] = {
+        localised_text = "it's daytime",
+        base_allowed = false,
+        and_allowed = true,
+        or_allowed = true,
+        order = "l"
+    },
+    [WHEN_NIGHT] = {
+        localised_text = "it's nighttime",
+        base_allowed = false,
+        and_allowed = true,
+        or_allowed = true,
+        order = "m"
+    },
+    [WHEN_PLAYER_RESPAWNS] = {
+        localised_text = "a player respawns",
+        base_allowed = true,
+        and_allowed = false,
+        or_allowed = true,
+        order = "n"
+    },
+}
+
+-- local ELEM_ENTITY = 1
+-- local ELEM_ITEM = 2
+-- local ELEM_FLUID = 3
+
+local EFFECT_TYPE_ITEMS = {
+    {"lawful-evil.effect_type.fine"},
+    {"lawful-evil.effect_type.reward"},
+    {"lawful-evil.effect_type.alert"},
+    {"lawful-evil.effect_type.disallow"},
+    {"lawful-evil.effect_type.license"},
+    {"lawful-evil.effect_type.death-penalty"},
+    {"lawful-evil.effect_type.kick-from-server"},
+    {"lawful-evil.effect_type.ban-from-server"},
+    {"lawful-evil.effect_type.mute-player"},
+    {"lawful-evil.effect_type.unmute-player"},
+    {"lawful-evil.effect_type.if-fine-fails"},
+    {"lawful-evil.effect_type.if-nth-offence"},
+    {"lawful-evil.effect_type.reset-offence-count"},
+    {"lawful-evil.effect_type.revoke-law"},
+    {"lawful-evil.effect_type.custom-script"}
+}
+local EFFECT_TYPE_FINE = 1
+local EFFECT_TYPE_REWARD = 2
+local EFFECT_TYPE_ALERT = 3
+local EFFECT_TYPE_DISALLOW = 4
+local EFFECT_TYPE_LICENSE = 5
+local EFFECT_TYPE_KILL = 6
+local EFFECT_TYPE_KICK = 7
+local EFFECT_TYPE_BAN = 8
+local EFFECT_TYPE_MUTE = 9
+local EFFECT_TYPE_UNMUTE = 10
+local EFFECT_TYPE_FINE_FAIL = 11
+local EFFECT_TYPE_NTH_OFFENCE = 12
+local EFFECT_TYPE_RESET_OFFENCE = 13
+local EFFECT_TYPE_REVOKE_LAW = 14
+local EFFECT_TYPE_CUSTOM_SCRIPT = 15
+
+local EFFECT_LICENSE_TYPE_ITEMS = {
+    {"lawful-evil.effect_license_type.car-license"},
+    {"lawful-evil.effect_license_type.tank-license"},
+    {"lawful-evil.effect_license_type.train-license"},
+    {"lawful-evil.effect_license_type.gun-license"},
+    {"lawful-evil.effect_license_type.artillery-license"}
+}
+local EFFECT_LICENSE_TYPE_CAR = 1
+local EFFECT_LICENSE_TYPE_TANK = 2
+local EFFECT_LICENSE_TYPE_TRAIN = 3
+local EFFECT_LICENSE_TYPE_GUN = 4
+local EFFECT_LICENSE_TYPE_ARTILLERY = 5
+
+local EFFECT_FINE_TYPE_ITEMS = {
+    {"lawful-evil.gui.player-inventory"},
+    {"lawful-evil.gui.item"},
+    {"lawful-evil.gui.money"}
+}
+local EFFECT_FINE_TYPE_INVENTORY = 1
+local EFFECT_FINE_TYPE_ITEM = 2
+local EFFECT_FINE_TYPE_MONEY = 3
+
+local EFFECT_REWARD_TYPE_ITEMS = {
+    {"lawful-evil.gui.item"},
+    {"lawful-evil.gui.money"}
+}
+local EFFECT_REWARD_TYPE_ITEM = 1
+local EFFECT_REWARD_TYPE_MONEY = 2
+
+local VALUE_TYPE_ITEMS = {
+    {"lawful-evil.gui.percent-of"},
+    {"lawful-evil.gui.fixed-amount"}
+}
+local VALUE_TYPE_PERCENTAGE = 1
+local VALUE_TYPE_FIXED = 2
+
+local OPERATION_TYPE_ITEMS = {"=", "!=", ">", "<"}
+local OPERATION_TYPE_EQUAL = 1
+local OPERATION_TYPE_NOT_EQUAL = 2
+local OPERATION_TYPE_GREATER_THAN = 3
+local OPERATION_TYPE_LESS_THAN = 4
+
+local PERCENTAGE_TYPE_ITEMS = {
+    {"lawful-evil.percentage-type-items.players"},
+    {"lawful-evil.percentage-type-items.forces-players"},
+    {"lawful-evil.percentage-type-items.balance"},
+    {"lawful-evil.percentage-type-items.evolution-factor"},
+    {"lawful-evil.percentage-type-items.rockets-launched"},
+    {"lawful-evil.percentage-type-items.total-production"},
+    {"lawful-evil.percentage-type-items.production-per-min"},
+    {"lawful-evil.percentage-type-items.total-consumption"},
+    {"lawful-evil.percentage-type-items.consumption-per-min"},
+    {"lawful-evil.percentage-type-items.technologies-researched"},
+    {"lawful-evil.percentage-type-items.trains"},
+    {"lawful-evil.percentage-type-items.forces-trains"},
+    {"lawful-evil.percentage-type-items.construction-robots"},
+    {"lawful-evil.percentage-type-items.forces-construction-robots"},
+    {"lawful-evil.percentage-type-items.logistic-robots"},
+    {"lawful-evil.percentage-type-items.forces-logistic-robots"},
+    {"lawful-evil.percentage-type-items.players-time-online"},
+    {"lawful-evil.percentage-type-items.players-afk-time"},
+    {"lawful-evil.percentage-type-items.game-tick"},
+    {"lawful-evil.percentage-type-items.time-of-day"}
+}
+local PERCENTAGE_TYPE_PLAYER_COUNT = 1
+local PERCENTAGE_TYPE_FORCE_PLAYER_COUNT = 2
+local PERCENTAGE_TYPE_BALANCE = 3
+local PERCENTAGE_TYPE_EVOLUTION_FACTOR = 4
+local PERCENTAGE_TYPE_ROCKETS_LAUNCHED = 5
+local PERCENTAGE_TYPE_TOTAL_PRODUCTION = 6
+local PERCENTAGE_TYPE_RATE_PRODUCTION = 7
+local PERCENTAGE_TYPE_TOTAL_CONSUMPTION = 8
+local PERCENTAGE_TYPE_RATE_CONSUMPTION = 9
+local PERCENTAGE_TYPE_TECHNOLOGIES_RESEARCHED = 10
+local PERCENTAGE_TYPE_TRAINS = 11
+local PERCENTAGE_TYPE_FORCE_TRAINS = 12
+local PERCENTAGE_TYPE_CONSTRUCTION_ROBOTS = 13
+local PERCENTAGE_TYPE_FORCE_CONSTRUCTION_ROBOTS = 14
+local PERCENTAGE_TYPE_LOGISTIC_ROBOTS = 15
+local PERCENTAGE_TYPE_FORCE_LOGISTIC_ROBOTS = 16
+local PERCENTAGE_TYPE_PLAYER_TIME_ONLINE = 17
+local PERCENTAGE_TYPE_PLAYER_TIME_AFK = 18
+local PERCENTAGE_TYPE_GAME_TICK = 19
+local PERCENTAGE_TYPE_DAYTIME = 20
+
+local LOGIC_TYPE_ITEMS = {{"and"}, {"or"}}
+local LOGIC_TYPE_AND = 1
+local LOGIC_TYPE_OR = 2
+local LOGIC_TYPE_BASE = 3
+
+local VOTE_AYE = 1
+local VOTE_NAY = 2
+
+
+local call = remote.call
 local floor = math.floor
 local ceil = math.ceil
+
+
+local HORIZONTAL_FLOW = {
+	type = "flow",
+	direction = "horizontal"
+}
 
 
 -- TODO: add admin mode and then extend the mode
@@ -20,6 +306,24 @@ local ceil = math.ceil
 
 local module = {}
 module.self_events = require 'self_events'
+
+
+local function is_EasyAPI_loaded()
+    return game.active_mods["EasyAPI"] ~= nil
+end
+
+local function EasyAPI_add_to_balance(force, amount)
+    if is_EasyAPI_loaded() then
+        call("EasyAPI", "deposit_force_money", force, amount)
+    end
+end
+
+local function EasyAPI_get_balance(force)
+    if is_EasyAPI_loaded() then
+        return (call("EasyAPI", "get_force_money", force.index) or 0)
+    end
+    return 0
+end
 
 script.on_init(function()
     global.laws = {}
@@ -55,11 +359,12 @@ end)
 -- end)
 
 local function AddLawfulButton(player)
-    local lawful_evil_button = mod_gui.get_button_flow(player).lawful_evil_button
+    local flow = mod_gui.get_button_flow(player)
+    local lawful_evil_button = flow.lawful_evil_button
     if lawful_evil_button then
         lawful_evil_button.destroy()
     end
-    mod_gui.get_button_flow(player).add{
+    flow.add{
         type = "sprite-button",
         name = "lawful_evil_button",
         sprite = "lawful-button-sprite",
@@ -76,7 +381,7 @@ end
 local function CalculatePercentageValue(value, type, item, force, player)
     local factor = value * 0.01
     if type == PERCENTAGE_TYPE_BALANCE then
-        return EasyAPI.get_balance(force) * factor
+        return EasyAPI_get_balance(force) * factor
     elseif type == PERCENTAGE_TYPE_PLAYER_COUNT then
         -- local count = 0
         -- for _, tech in pairs(game.players) do count = count + 1 end
@@ -181,8 +486,10 @@ local _technologies = nil
 local function GetTechnologies()
     if _technologies == nil then
         _technologies = {}
+        local i = 0
         for tech_name, tech in pairs(game.technology_prototypes) do
-            table.insert(_technologies, tech.localised_name)
+            i = i + 1
+            _technologies[i] = tech.localised_name
         end
     end
     return _technologies
@@ -220,7 +527,8 @@ local function ClauseMatch(law, clause, type, target, force, player)
                 clause.when_value_percentage_type,
                 clause.when_value_percentage_item,
                 force,
-                player)
+                player
+            )
         end
         if clause.when_2_value_type == VALUE_TYPE_PERCENTAGE then
             value_2 = CalculatePercentageValue(
@@ -228,7 +536,8 @@ local function ClauseMatch(law, clause, type, target, force, player)
                 clause.when_2_value_percentage_type,
                 clause.when_2_value_percentage_item,
                 force,
-                player)
+                player
+            )
         end
         return CalculateWithOperation(value_1, value_2, clause.when_operation_type)
     elseif clause.when_type == type then
@@ -333,7 +642,7 @@ local function ExecuteEffect(law, effect, event)
                 count = floor(value)
             }
         elseif effect.effect_reward_type == EFFECT_REWARD_TYPE_MONEY then
-            EasyAPI.add_to_balance(force, value)
+            EasyAPI_add_to_balance(force, value)
         end
     elseif effect_type == EFFECT_TYPE_FINE then
         if effect.effect_fine_type == EFFECT_FINE_TYPE_INVENTORY then
@@ -347,9 +656,9 @@ local function ExecuteEffect(law, effect, event)
                 count = floor(value)
             }
         elseif effect.effect_fine_type == EFFECT_FINE_TYPE_MONEY then
-            local balance = EasyAPI.get_balance(force)
+            local balance = EasyAPI_get_balance(force)
             event.fine_success = (balance >= value)
-            EasyAPI.add_to_balance(force, -value)
+            EasyAPI_add_to_balance(force, -value)
         end
     elseif effect_type == EFFECT_TYPE_FINE_FAIL then
         event.stop_effects = (event.fine_success == true or event.fine_success == nil)
@@ -436,7 +745,7 @@ end
 
 local function ExecuteLaws(laws, event)
     local player_index = event.player_index
-	local player
+    local player
     if player_index then
         player = game.get_player(player_index) -- TODO: change
     end
@@ -478,26 +787,22 @@ end)
 Event.register(defines.events.on_console_chat, function(event)
     local player = game.get_player(event.player_index)
     if not (player and player.valid) then return end
-    local message = event.message
-    local laws = LawMatch(WHEN_PLAYER_CHATS, message, player.force, player)
+    local laws = LawMatch(WHEN_PLAYER_CHATS, event.message, player.force, player)
     event.force = player.force
     ExecuteLaws(laws, event)
 end)
 
 local function law_on_entity_died(event, player)
-    if not (player and player.valid) then return end
-
-    local laws = LawMatch(WHEN_PLAYER_DESTROYS, event.entity.name, event.force, player)
     if player.is_player() then
         event.player_index = player.index
     end
+    local laws = LawMatch(WHEN_PLAYER_DESTROYS, event.entity.name, event.force, player)
     event.force = event.cause.force
     ExecuteLaws(laws, event)
 end
 
-Event.register(defines.events.on_entity_died, function(event)
+local function on_entity_died(event)
     local cause = event.cause
-    if not (cause and cause.valid) then return end
 
     if cause.type == "character" then
         law_on_entity_died(event, cause.player)
@@ -513,22 +818,22 @@ Event.register(defines.events.on_entity_died, function(event)
             law_on_entity_died(event, driver.player)
         end
     end
+end
+Event.register(defines.events.on_entity_died, function(event)
+    pcall(on_entity_died, event)
 end)
 
 local function law_on_entity_damaged(event, player)
-    if not (player and player.valid) then return end
-
-    local laws = LawMatch(WHEN_PLAYER_DAMAGES, event.entity.name, event.force, player)
     if player.is_player() then
         event.player_index = player.index
     end
+    local laws = LawMatch(WHEN_PLAYER_DAMAGES, event.entity.name, event.force, player)
     event.force = event.cause.force
     ExecuteLaws(laws, event)
 end
 
-Event.register(defines.events.on_entity_damaged, function(event)
+local function on_entity_damaged(event)
     local cause = event.cause
-    if not (cause and cause.valid) then return end
 
     if cause.type == "character" then
         law_on_entity_damaged(event, cause.player)
@@ -544,6 +849,9 @@ Event.register(defines.events.on_entity_damaged, function(event)
             law_on_entity_damaged(event, driver.player)
         end
     end
+end
+Event.register(defines.events.on_entity_damaged, function(event)
+    pcall(on_entity_damaged, event)
 end)
 
 Event.register(defines.events.on_built_entity, function(event)
@@ -630,19 +938,19 @@ Event.register(defines.events.on_player_died, function(event)
 end)
 
 Event.register(defines.events.on_player_driving_changed_state, function(event)
-    local player = game.get_player(event.player_index)
-    local player_data = Player.get_data(player)
     local vehicle = event.entity
-    if vehicle then
-        local driver = vehicle.get_driver()
-        if driver and driver.player == player then
-            if vehicle.name == "car" and player_data.disallow_car then
-                vehicle.set_driver(nil)
-            elseif vehicle.name == "tank" and player_data.disallow_tank then
-                vehicle.set_driver(nil)
-            elseif vehicle.name == "locomotive" and player_data.disallow_locomotive then
-                vehicle.set_driver(nil)
-            end
+    if vehicle == nil then return end
+
+    local player = game.get_player(event.player_index)
+    local driver = vehicle.get_driver()
+    if driver and driver.player == player then
+        local player_data = Player.get_data(player)
+        if player_data.disallow_car and vehicle.name == "car" then
+            vehicle.set_driver(nil)
+        elseif player_data.disallow_tank and vehicle.name == "tank" then
+            vehicle.set_driver(nil)
+        elseif player_data.disallow_locomotive and vehicle.name == "locomotive" then
+            vehicle.set_driver(nil)
         end
     end
 end)
@@ -1304,23 +1612,17 @@ function CreateLawfulEvilGUI(player)
             caption = {"size.none"}
         }
     end
-    for i, law in pairs(passed_laws) do
+    for _, law in pairs(passed_laws) do
         local law_frame = passed_laws_scroll.add{
             type = "frame",
             direction = "vertical",
             caption = law.title
         }
         law_frame.style.horizontally_stretchable = true
-        local flow1 = law_frame.add{
-            type = "flow",
-            direction = "horizontal"
-        }
-        local flow2 = flow1.add{
-            type = "flow",
-            direction = "horizontal"
-        }
+        local flow1 = law_frame.add(HORIZONTAL_FLOW)
+        local flow2 = flow1.add(HORIZONTAL_FLOW)
         flow2.style.horizontally_stretchable = true
-        local description = flow2.add{
+        flow2.add{
             type = "label",
             caption = law.description
         }
@@ -1348,7 +1650,7 @@ function CreateLawfulEvilGUI(player)
             caption = {"size.none"}
         }
     end
-    for i, law in pairs(proposed_laws) do
+    for _, law in pairs(proposed_laws) do
         local law_frame = laws_scroll.add{
             type = "frame",
             direction = "vertical",
@@ -1357,14 +1659,8 @@ function CreateLawfulEvilGUI(player)
         law_frame.style.horizontally_stretchable = true
         law_frame.style.vertically_stretchable = true
         law_frame.style.maximal_height = 150
-        local flow1 = law_frame.add{
-            type = "flow",
-            direction = "horizontal"
-        }
-        local flow2 = flow1.add{
-            type = "flow",
-            direction = "horizontal"
-        }
+        local flow1 = law_frame.add(HORIZONTAL_FLOW)
+        local flow2 = flow1.add(HORIZONTAL_FLOW)
         flow2.style.horizontally_stretchable = true
         local description = flow2.add{
             type = "text-box",
@@ -1376,7 +1672,7 @@ function CreateLawfulEvilGUI(player)
         description.style.maximal_width = 800
         description.style.minimal_height = 50
         description.style.maximal_height = 60
-        local vote_button = flow1.add{
+        flow1.add{
             type = "button",
             name = "vote_law_" .. law.index,
             caption = {"view"}
@@ -1386,11 +1682,8 @@ function CreateLawfulEvilGUI(player)
         if voting_ticks_left > 3600 then
             voting_mins_left = ceil((voting_ticks_left) / 3600)
         end
-        local meta_flow = law_frame.add{
-            type = "flow",
-            name = "meta_flow",
-            direction = "horizontal"
-        }
+        local meta_flow = law_frame.add(HORIZONTAL_FLOW)
+		meta_flow.name = "meta_flow"
         meta_flow.style.horizontally_stretchable = true
         meta_flow.style.horizontal_align = "center"
         if not law.linked_law then
@@ -1429,10 +1722,7 @@ function CreateLawfulEvilGUI(player)
         end
     end
 
-    local bottom_buttons_flow = gui.add{
-        type = "flow",
-        direction = "horizontal"
-    }
+    local bottom_buttons_flow = gui.add(HORIZONTAL_FLOW)
     local propose_law_button = bottom_buttons_flow.add{
         type = "button",
         name = "propose_law",
@@ -1506,11 +1796,8 @@ function CreateLawGUI(event)
         CreateEffectGUI(effects_gui, effect, read_only)
     end
 
-    local buttons = gui.add{
-        type = "flow",
-        name = "buttons",
-        direction = "horizontal"
-    }
+    local buttons = gui.add(HORIZONTAL_FLOW)
+	buttons.name = "buttons"
     if not read_only then
         buttons.add{
             type = "button",
@@ -1610,7 +1897,7 @@ end
 function CreateClauseGUI(parent, clause, read_only)
     local gui = parent.add{
         type = "flow",
-        flow = "horizontal"
+        flow = "horizontal" -- TODO: check
     }
     gui.style.horizontally_stretchable = true
     gui.style.height = 32
@@ -1724,11 +2011,11 @@ end
 function CreateEffectGUI(parent, effect, read_only)
     local gui = parent.add{
         type = "flow",
-        flow = "horizontal"
+        flow = "horizontal" -- TODO: check
     }
     gui.style.horizontally_stretchable = true
     gui.style.height = 32
-    local main_label = gui.add{
+    gui.add{
         type = "label",
         caption = {"then"}
     }
@@ -1791,7 +2078,7 @@ function CreateEffectGUI(parent, effect, read_only)
             }
             CreateValueFields(gui, effect, "effect_", read_only)
         elseif effect.effect_fine_type == EFFECT_FINE_TYPE_MONEY then
-            if EasyAPI.is_loaded() then
+            if is_EasyAPI_loaded() then
                 CreateValueFields(gui, effect, "effect_", read_only)
             else
                 gui.add{
@@ -1824,7 +2111,7 @@ function CreateEffectGUI(parent, effect, read_only)
             }
             CreateValueFields(gui, effect, "effect_", read_only)
         else
-            if EasyAPI.is_loaded() then
+            if is_EasyAPI_loaded() then
                 CreateValueFields(gui, effect, "effect_", read_only)
             else
                 gui.add{
@@ -1922,7 +2209,7 @@ function CreateValueFields(gui, clause, prefix, read_only)
             read_only = read_only,
             label_style = "menu_message"
         }
-        if pct_type == PERCENTAGE_TYPE_BALANCE and not EasyAPI.is_loaded() then
+        if pct_type == PERCENTAGE_TYPE_BALANCE and not is_EasyAPI_loaded() then
             local missing = gui.add{
                 type = "label",
                 caption = {"lawful-evil.multiplayer-trading.missing"}
@@ -1949,11 +2236,10 @@ local function on_configuration_changed(event)
         local old_button = player.gui.top.lawful_evil_button
         if old_button then
             old_button.destroy()
+			AddLawfulButton(player)
         end
-        AddLawfulButton(player)
     end
 end
-
 script.on_configuration_changed(on_configuration_changed)
 
 remote.remove_interface('lawful-evil')
