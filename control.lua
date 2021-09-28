@@ -373,7 +373,7 @@ local function AddLawfulButton(player)
 end
 
 local function IsDaytime()
-    local surface = game.surfaces[1]
+    local surface = game.get_surface(1)
     return not (surface.daytime > surface.evening and surface.daytime < surface.morning)
 end
 
