@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.0
+Date: 2021-10-07
+  Changes:
+    - Changed style for the button
+    - Slightly optimized
+  Bugfixes:
+    - Fixes localization
+    - Fixed creatin of law
+---------------------------------------------------------------------------------------------------
 Version: 0.7.3
 Date: 2021-09-28
   Bugfixes:

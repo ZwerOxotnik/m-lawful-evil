@@ -368,7 +368,7 @@ local function AddLawfulButton(player)
         type = "sprite-button",
         name = "lawful_evil_button",
         sprite = "lawful-button-sprite",
-        style = "mod_gui_button"
+        style = "slot_button"
     }
 end
 
@@ -918,7 +918,8 @@ Event.register(defines.events.on_rocket_launched, function(event)
         WHEN_ROCKET_LAUNCHES,
         event.rocket,
         event.rocket.force,
-        nil)
+        nil
+	)
     event.force = event.rocket.force
     ExecuteLaws(laws, event)
 end)
@@ -931,7 +932,8 @@ Event.register(defines.events.on_player_died, function(event)
         WHEN_PLAYER_KILLS,
         cause,
         cause.force,
-        nil)
+        nil
+	)
     event.force = cause.force
     event.player_index = cause.associated_player.index
     ExecuteLaws(laws, event)
@@ -1009,14 +1011,16 @@ local function CheckProductionRates()
         global.production_rates = {}
     end
 
+	local production_rates = global.production_rates
     for _, force in pairs(game.forces) do
-        if not global.production_rates[force.name] then
-            global.production_rates[force.name] = {
+		local force_name = force.name
+        if not production_rates[force_name] then
+            production_rates[force_name] = {
                 production = {},
                 consumption = {}
             }
         end
-        local rates = global.production_rates[force.name]
+        local rates = production_rates[force_name]
         for item, count in pairs(force.item_production_statistics.input_counts) do
             local production = rates.production[item]
             if production then
@@ -1049,11 +1053,11 @@ end)
 
 Gui.on_click("lawful_evil_button", function(event)
     local player = game.get_player(event.player_index)
-    local lawful_gui = player.gui.center["lawful_evil_gui"]
+    local lawful_gui = player.gui.center.lawful_evil_gui
     if lawful_gui then
         lawful_gui.destroy()
     else
-        local law_gui = player.gui.center["lawful_evil_law_gui"]
+        local law_gui = player.gui.center.lawful_evil_law_gui
         if law_gui then
             law_gui.destroy()
         else
@@ -1064,7 +1068,7 @@ end)
 
 Gui.on_click("close_lawful_gui", function(event)
     local player = game.get_player(event.player_index)
-    local lawful_gui = player.gui.center["lawful_evil_gui"]
+    local lawful_gui = player.gui.center.lawful_evil_gui
     if lawful_gui then
         lawful_gui.destroy()
     end
@@ -1072,7 +1076,7 @@ end)
 
 Gui.on_click("propose_law", function(event)
     local player = game.get_player(event.player_index)
-    local lawful_gui = player.gui.center["lawful_evil_gui"]
+    local lawful_gui = player.gui.center.lawful_evil_gui
     if lawful_gui then
         lawful_gui.destroy()
     end
@@ -1099,7 +1103,7 @@ end
 
 Gui.on_click("add_clause", function(event)
     local player = game.get_player(event.player_index)
-    local law_gui = player.gui.center["lawful_evil_law_gui"]
+    local law_gui = player.gui.center.lawful_evil_law_gui
     if law_gui then
         local subclause = CreateSubClause()
         CreateClauseGUI(law_gui.clauses_frame.clauses, subclause)
@@ -1109,7 +1113,7 @@ end)
 
 Gui.on_click("add_effect", function(event)
     local player = game.get_player(event.player_index)
-    local law_gui = player.gui.center["lawful_evil_law_gui"]
+    local law_gui = player.gui.center.lawful_evil_law_gui
     if law_gui then
         local effect = {
             base_effect = false,
@@ -1124,7 +1128,7 @@ end)
 
 Gui.on_click("delete_.+", function(event)
     local player = game.get_player(event.player_index)
-    local law_gui = player.gui.center["lawful_evil_law_gui"]
+    local law_gui = player.gui.center.lawful_evil_law_gui
     local elem = event.element
     if law_gui then
         elem.parent.destroy()
@@ -1138,7 +1142,7 @@ Gui.on_click("vote_law_([0-9]+)", function(event)
     if law_gui then
         law_gui.destroy()
     else
-        law_gui = player.gui.center["lawful_evil_law_gui"]
+        law_gui = player.gui.center.lawful_evil_law_gui
         if law_gui then
             law_gui.destroy()
         end
@@ -1161,7 +1165,7 @@ Gui.on_click("view_law_([0-9]+)", function(event)
     if law_gui then
         law_gui.destroy()
     else
-        law_gui = player.gui.center["lawful_evil_law_gui"]
+        law_gui = player.gui.center.lawful_evil_law_gui
         if law_gui then
             law_gui.destroy()
         end
@@ -1212,7 +1216,7 @@ end)
 
 Gui.on_click("submit_law", function(event)
     local player = game.get_player(event.player_index)
-    local gui = player.gui.center["lawful_evil_law_gui"]
+    local gui = player.gui.center.lawful_evil_law_gui
     if gui then
         local law = SaveLaw(gui)
         game.print({"lawful-evil.messages.law-is-submitted", law.title})
@@ -1234,16 +1238,17 @@ end)
 
 Gui.on_selection_state_changed(".+", function(event)
     local elem = event.element
-    local player = game.get_player(event.player_index)
     if elem.parent.parent.name == "clauses" then
-        local gui = player.gui.center["lawful_evil_law_gui"]
+		local player = game.get_player(event.player_index)
+        local gui = player.gui.center.lawful_evil_law_gui
         local law = SaveLaw(gui)
         gui.clauses_frame.clauses.clear()
         for _, clause in pairs(law.clauses) do
             CreateClauseGUI(gui.clauses_frame.clauses, clause)
         end
     elseif elem.parent.parent.name == "effects" then
-        local gui = player.gui.center["lawful_evil_law_gui"]
+		local player = game.get_player(event.player_index)
+        local gui = player.gui.center.lawful_evil_law_gui
         local law = SaveLaw(gui)
         gui.effects_frame.effects.clear()
         for _, effect in pairs(law.effects) do
@@ -1398,7 +1403,7 @@ local function SaveEffect(gui, effect, player)
 end
 
 function SaveLaw(gui)
-    local player = game.players[gui.player_index]
+    local player = game.get_player(gui.player_index)
     local law = GetNewLaw(player)
     if gui.law_title then
         if string.len(gui.law_title.text) > 38 then
@@ -1448,7 +1453,7 @@ function SaveLaw(gui)
 end
 
 function CloseLawGui(player)
-    local gui = player.gui.center["lawful_evil_law_gui"]
+    local gui = player.gui.center.lawful_evil_law_gui
     if gui then
         gui.destroy()
         CreateLawfulEvilGUI(player)
@@ -1818,7 +1823,7 @@ function CreateLawGUI(event)
         local i = 2
         for _, law in pairs(global.laws) do
             if not law.passed then
-                options[options+1] = law.title
+                options[#options+1] = law.title
                 options_indexed[law.id] = i
                 i = i + 1
             end
