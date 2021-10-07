@@ -288,6 +288,14 @@ local VOTE_AYE = 1
 local VOTE_NAY = 2
 
 
+local TRASH_BIN = {
+	type = "sprite-button",
+	sprite = "utility/trash_white",
+	hovered_sprite = "utility/trash",
+	clicked_sprite = "utility/trash"
+}
+
+
 local call = remote.call
 local floor = math.floor
 local ceil = math.ceil
@@ -2003,11 +2011,8 @@ function CreateClauseGUI(parent, clause, read_only)
         end
     end
     if not clause.base_clause and not read_only then
-        local delete_button = gui.add{
-            type = "sprite-button",
-            name = "delete_clause",
-            sprite = "utility/trash_bin"
-        }
+        local delete_button = gui.add(TRASH_BIN)
+        delete_button.name = "delete_clause"
         delete_button.style.width = 24
         delete_button.style.height = 24
     end
@@ -2168,11 +2173,8 @@ function CreateEffectGUI(parent, effect, read_only)
         }
     end
     if not effect.base_effect and not read_only then
-        local delete_button = gui.add{
-            type = "sprite-button",
-            name = "delete_effect",
-            sprite = "utility/trash_bin"
-        }
+        local delete_button = gui.add(TRASH_BIN)
+		delete_button.name = "delete_effect"
         delete_button.style.width = 24
         delete_button.style.height = 24
     end
