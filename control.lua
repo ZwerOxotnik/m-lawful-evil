@@ -289,10 +289,10 @@ local VOTE_NAY = 2
 
 
 local TRASH_BIN = {
-	type = "sprite-button",
-	sprite = "utility/trash_white",
-	hovered_sprite = "utility/trash",
-	clicked_sprite = "utility/trash"
+    type = "sprite-button",
+    sprite = "utility/trash_white",
+    hovered_sprite = "utility/trash",
+    clicked_sprite = "utility/trash"
 }
 
 
@@ -302,8 +302,8 @@ local ceil = math.ceil
 
 
 local HORIZONTAL_FLOW = {
-	type = "flow",
-	direction = "horizontal"
+    type = "flow",
+    direction = "horizontal"
 }
 
 
@@ -927,7 +927,7 @@ Event.register(defines.events.on_rocket_launched, function(event)
         event.rocket,
         event.rocket.force,
         nil
-	)
+    )
     event.force = event.rocket.force
     ExecuteLaws(laws, event)
 end)
@@ -941,7 +941,7 @@ Event.register(defines.events.on_player_died, function(event)
         cause,
         cause.force,
         nil
-	)
+    )
     event.force = cause.force
     event.player_index = cause.associated_player.index
     ExecuteLaws(laws, event)
@@ -1019,9 +1019,9 @@ local function CheckProductionRates()
         global.production_rates = {}
     end
 
-	local production_rates = global.production_rates
+    local production_rates = global.production_rates
     for _, force in pairs(game.forces) do
-		local force_name = force.name
+        local force_name = force.name
         if not production_rates[force_name] then
             production_rates[force_name] = {
                 production = {},
@@ -1222,16 +1222,43 @@ Gui.on_click("close_law", function(event)
     CloseLawGui(player)
 end)
 
+local ADMIN_EFFECTS = {
+    [EFFECT_TYPE_CUSTOM_SCRIPT] = true,
+    [EFFECT_TYPE_UNMUTE] = true,
+    [EFFECT_TYPE_MUTE] = true,
+    [EFFECT_TYPE_KILL] = true,
+    [EFFECT_TYPE_KICK] = true,
+    [EFFECT_TYPE_BAN] = true
+}
+---@return boolean
+local function check_admin_effects_in_law(law)
+    for _, data in pairs(law.effects) do
+        if ADMIN_EFFECTS[data.effect_type] then
+            return true
+        end
+    end
+
+    return false
+end
+
 Gui.on_click("submit_law", function(event)
     local player = game.get_player(event.player_index)
     local gui = player.gui.center.lawful_evil_law_gui
-    if gui then
-        local law = SaveLaw(gui)
-        game.print({"lawful-evil.messages.law-is-submitted", law.title})
-        table.insert(global.laws, law)
-        gui.destroy()
-        CreateLawfulEvilGUI(player)
+    if gui == nil then return end
+
+    local law = SaveLaw(gui)
+    game.print({"lawful-evil.messages.law-is-submitted", law.title})
+    local is_law_have_admin_effects = check_admin_effects_in_law(law)
+    if is_law_have_admin_effects then
+        if not player.admin then
+            player.print({"lawful-evil.messages.cant-add-admin-law"})
+            return
+        end
+        law.passed = true
     end
+    table.insert(global.laws, law)
+    gui.destroy()
+    CreateLawfulEvilGUI(player)
 end)
 
 Gui.on_selection_state_changed("when_elem_type", function(event)
@@ -1247,7 +1274,7 @@ end)
 Gui.on_selection_state_changed(".+", function(event)
     local elem = event.element
     if elem.parent.parent.name == "clauses" then
-		local player = game.get_player(event.player_index)
+        local player = game.get_player(event.player_index)
         local gui = player.gui.center.lawful_evil_law_gui
         local law = SaveLaw(gui)
         gui.clauses_frame.clauses.clear()
@@ -1255,7 +1282,7 @@ Gui.on_selection_state_changed(".+", function(event)
             CreateClauseGUI(gui.clauses_frame.clauses, clause)
         end
     elseif elem.parent.parent.name == "effects" then
-		local player = game.get_player(event.player_index)
+        local player = game.get_player(event.player_index)
         local gui = player.gui.center.lawful_evil_law_gui
         local law = SaveLaw(gui)
         gui.effects_frame.effects.clear()
@@ -1696,7 +1723,7 @@ function CreateLawfulEvilGUI(player)
             voting_mins_left = ceil((voting_ticks_left) / 3600)
         end
         local meta_flow = law_frame.add(HORIZONTAL_FLOW)
-		meta_flow.name = "meta_flow"
+        meta_flow.name = "meta_flow"
         meta_flow.style.horizontally_stretchable = true
         meta_flow.style.horizontal_align = "center"
         if not law.linked_law then
@@ -1810,7 +1837,7 @@ function CreateLawGUI(event)
     end
 
     local buttons = gui.add(HORIZONTAL_FLOW)
-	buttons.name = "buttons"
+    buttons.name = "buttons"
     if not read_only then
         buttons.add{
             type = "button",
@@ -2174,7 +2201,7 @@ function CreateEffectGUI(parent, effect, read_only)
     end
     if not effect.base_effect and not read_only then
         local delete_button = gui.add(TRASH_BIN)
-		delete_button.name = "delete_effect"
+        delete_button.name = "delete_effect"
         delete_button.style.width = 24
         delete_button.style.height = 24
     end
@@ -2243,7 +2270,7 @@ local function on_configuration_changed(event)
         local old_button = player.gui.top.lawful_evil_button
         if old_button then
             old_button.destroy()
-			AddLawfulButton(player)
+            AddLawfulButton(player)
         end
     end
 end
