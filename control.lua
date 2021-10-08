@@ -339,7 +339,7 @@ script.on_init(function()
     local example_law = GetNewLaw(nil)
     example_law.title = "Example Law"
     example_law.description = "This law is an example"
-    example_law.clauses[1] =  {
+    example_law.clauses[1] = {
         base_clause = true,
         when_type = WHEN_PLAYER_CHATS,
         when_text = "Lawful Evil"
@@ -358,8 +358,9 @@ script.on_init(function()
     no_shooting.set_allows_action(defines.input_action.change_shooting_state, false)
 end)
 
--- commands.add_command("pass-laws", "pass laws", function()
---     for _, law in pairs(global.laws) do
+-- commands.add_command("pass-laws", "pass laws", function()    local laws = global.laws
+--     for i=1, #laws do
+--         law = laws[i]
 --         if not law.passed then
 --             PassLaw(law)
 --         end
@@ -574,12 +575,16 @@ end
 local function LawMatch(type, target, force, player)
     local matched_laws = {}
     local ml_count = 0
-    for _, law in pairs(global.laws) do
+    local laws = global.laws
+    for i=1, #laws do
+        law = laws[i]
         if law.passed then
             law.inverse_effects = false
             local results = {}
             local i_results = 0
-            for _, clause in pairs(law.clauses) do
+            local clauses = law.clauses
+            for j = 1, #clauses do
+                local clause = clauses[j]
                 local result = ClauseMatch(law, clause, type, target, force, player)
                 i_results = i_results + 1
                 results[i_results] = {
@@ -757,7 +762,9 @@ local function ExecuteLaws(laws, event)
     if player_index then
         player = game.get_player(player_index) -- TODO: change
     end
-    for _, law in pairs(laws) do
+
+    for i=1, #laws do
+        local law = laws[i]
         -- local clause = law.clauses[1] -- TODO: check
 
         -- TODO: Optimize
@@ -772,7 +779,9 @@ local function ExecuteLaws(laws, event)
             end
         end
 
-        for _, effect in pairs(law.effects) do
+        local effects = law.effects
+        for j = 1, #effects do
+            local effect = effects[j]
             if event.all_players then
                 for _, _player in pairs(game.players) do
                     ExecuteEffect(law, effect, {
@@ -996,7 +1005,9 @@ local function RefreshAllLawfulEvilGui()
 end
 
 local function CheckVotes()
-    for _, law in pairs(global.laws) do
+    local laws = global.laws
+    for i=1, #laws do
+        law = laws[i]
         if not law.passed and not law.linked_law and game.tick >= law.vote_end_tick then
             local votes = GetLawVotes(law)
             if votes.ayes > votes.noes then
@@ -1232,8 +1243,9 @@ local ADMIN_EFFECTS = {
 }
 ---@return boolean
 local function check_admin_effects_in_law(law)
-    for _, data in pairs(law.effects) do
-        if ADMIN_EFFECTS[data.effect_type] then
+    local effects = law.effects
+    for i = 1, #effects do
+        if ADMIN_EFFECTS[effects[i].effect_type] then
             return true
         end
     end
@@ -1278,16 +1290,18 @@ Gui.on_selection_state_changed(".+", function(event)
         local gui = player.gui.center.lawful_evil_law_gui
         local law = SaveLaw(gui)
         gui.clauses_frame.clauses.clear()
-        for _, clause in pairs(law.clauses) do
-            CreateClauseGUI(gui.clauses_frame.clauses, clause)
+        local clauses = law.clauses
+        for i = 1, #clauses do
+            CreateClauseGUI(gui.clauses_frame.clauses, clauses[i])
         end
     elseif elem.parent.parent.name == "effects" then
         local player = game.get_player(event.player_index)
         local gui = player.gui.center.lawful_evil_law_gui
         local law = SaveLaw(gui)
         gui.effects_frame.effects.clear()
-        for _, effect in pairs(law.effects) do
-            CreateEffectGUI(gui.effects_frame.effects, effect)
+        local effects = law.effects
+        for i = 1, #effects do
+            CreateEffectGUI(gui.effects_frame.effects, effects[i])
         end
     end
 end)
@@ -1321,7 +1335,9 @@ function GetNewLaw(player)
 end
 
 local function GetLawById(id)
-    for _, law in pairs(global.laws) do
+    local laws = global.laws
+    for i=1, #laws do
+        law = laws[i]
         if law.id == id then
             return law
         end
@@ -1474,7 +1490,9 @@ function SaveLaw(gui)
     end
     if gui.buttons.linked_law.selected_index > 1 then
         local options = {0}
-        for _, law in pairs(global.laws) do
+        local laws = global.laws
+        for i=1, #laws do
+            law = laws[i]
             if not law.passed then
                 table.insert(options, law.id)
             end
@@ -1508,7 +1526,9 @@ function PassLaw(law)
     ExecuteLaws(matched_laws, {
         all_players = true
     })
-    for _, other_law in pairs(global.laws) do
+    local laws = global.laws
+    for i=1, #laws do
+        other_law = laws[i]
         if not other_law.passed and other_law.linked_law == law.id then
             PassLaw(other_law)
         end
@@ -1520,7 +1540,9 @@ function RevokeLaw(law, index)
     local law_id = law.id
     script.raise_event(module.self_events.on_pre_revoke_law, {law_id = law_id})
     table.remove(global.laws, index)
-    for i, other_law in pairs(global.laws) do
+    local laws = global.laws
+    for i=1, #laws do
+        other_law = laws[i]
         if other_law.linked_law == law_id then
             RevokeLaw(other_law, i)
         end
@@ -1589,8 +1611,8 @@ end
 
 local function GetClauseIndexByID(clause_type_id, clause_types)
     if clause_type_id ~= nil then
-        for i, id in pairs(clause_types) do
-            if id == clause_type_id then
+        for i = 1, #clause_types do
+            if clause_types[i] == clause_type_id then
                 return i
             end
         end
@@ -1625,7 +1647,9 @@ function CreateLawfulEvilGUI(player)
 
     local passed_laws = {}
     local proposed_laws = {}
-    for i, law in pairs(global.laws) do
+    local laws = global.laws
+    for i=1, #laws do
+        law = laws[i]
         law.index = i
         if law.passed then
             passed_laws[#passed_laws + 1] = law
@@ -1646,13 +1670,14 @@ function CreateLawfulEvilGUI(player)
     passed_laws_scroll.style.minimal_width = 500
     passed_laws_scroll.style.minimal_height = 150
     passed_laws_scroll.style.maximal_height = 300
-    if #passed_laws == 0 then
+    if next(passed_laws) == nil then
         passed_laws_scroll.add{
             type = "label",
             caption = {"size.none"}
         }
     end
-    for _, law in pairs(passed_laws) do
+    for i = 1, #passed_laws do
+        local law = passed_laws[i]
         local law_frame = passed_laws_scroll.add{
             type = "frame",
             direction = "vertical",
@@ -1684,13 +1709,14 @@ function CreateLawfulEvilGUI(player)
     laws_scroll.style.minimal_width = 500
     laws_scroll.style.minimal_height = 150
     laws_scroll.style.maximal_height = 300
-    if #proposed_laws == 0 then
+    if next(proposed_laws) == nil then
         laws_scroll.add{
             type = "label",
             caption = {"size.none"}
         }
     end
-    for _, law in pairs(proposed_laws) do
+    for i = 1, #proposed_laws do
+        local law = proposed_laws[i]
         local law_frame = laws_scroll.add{
             type = "frame",
             direction = "vertical",
@@ -1829,11 +1855,13 @@ function CreateLawGUI(event)
     effects_gui.style.minimal_width = clauses_frame.style.minimal_width
     effects_gui.style.maximal_height = 200
 
-    for _, clause in pairs(law.clauses) do
-        CreateClauseGUI(clauses_gui, clause, read_only)
+    local clauses = law.clauses
+    for i = 1, #clauses do
+        CreateClauseGUI(clauses_gui, clauses[i], read_only)
     end
-    for _, effect in pairs(law.effects) do
-        CreateEffectGUI(effects_gui, effect, read_only)
+    local effects = law.effects
+    for i = 1, #effects do
+        CreateEffectGUI(effects_gui, effects[i], read_only)
     end
 
     local buttons = gui.add(HORIZONTAL_FLOW)
@@ -1855,12 +1883,14 @@ function CreateLawGUI(event)
         }
         local options = {{"lawful-evil.gui.none"}}
         local options_indexed = {}
-        local i = 2
-        for _, law in pairs(global.laws) do
+        local j = 2
+        local laws = global.laws
+        for i=1, #laws do
+            law = laws[i]
             if not law.passed then
                 options[#options+1] = law.title
-                options_indexed[law.id] = i
-                i = i + 1
+                options_indexed[law.id] = j
+                j = j + 1
             end
         end
         CreateDropDown{
@@ -1959,8 +1989,8 @@ function CreateClauseGUI(parent, clause, read_only)
     local clause_types = GetClauseTypes(clause.logic_type)
     local selected_clause_type_index = GetClauseIndexByID(clause.when_type, clause_types)
     local clause_type_drop_down_options = {}
-    for i, type in pairs(clause_types) do
-        clause_type_drop_down_options[i] = {"lawful-evil.clause-type." .. type}
+    for i = 1, #clause_types do
+        clause_type_drop_down_options[i] = {"lawful-evil.clause-type." .. clause_types[i]}
     end
     CreateDropDown{
         parent = gui,
@@ -2282,7 +2312,9 @@ remote.add_interface('lawful-evil', {
         return module.self_events[name]
     end,
     get_law_by_id = function(target_id)
-        for _, law in pairs(global.laws) do
+        local laws = global.laws
+        for i=1, #laws do
+            law = laws[i]
             if law.id == target_id then
                 return law
             end
