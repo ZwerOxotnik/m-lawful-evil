@@ -7,6 +7,10 @@ require 'stdlib/game'
 local mod_gui = require("mod-gui")
 
 
+local get_player_data = Player.get_data
+local set_player_data = Player.set_data
+
+
 local WHEN_PLAYER_BUILDS = "player-builds"
 local WHEN_PLAYER_MINES = "player-mines"
 local WHEN_PLAYER_DAMAGES = "player-damages"
@@ -369,10 +373,11 @@ end)
 
 local function AddLawfulButton(player)
     local flow = mod_gui.get_button_flow(player)
-    local lawful_evil_button = flow.lawful_evil_button
-    if lawful_evil_button then
-        lawful_evil_button.destroy()
+    local button = flow.lawful_evil_button
+    if button then
+        button.destroy()
     end
+
     flow.add{
         type = "sprite-button",
         name = "lawful_evil_button",
@@ -581,27 +586,28 @@ local function LawMatch(type, target, force, player)
         if law.passed then
             law.inverse_effects = false
             local results = {}
-            local i_results = 0
+            local results_size = 0
             local clauses = law.clauses
             for j = 1, #clauses do
                 local clause = clauses[j]
                 local result = ClauseMatch(law, clause, type, target, force, player)
-                i_results = i_results + 1
-                results[i_results] = {
+                results_size = results_size + 1
+                results[results_size] = {
                     success = result,
                     logic = clause.base_clause and LOGIC_TYPE_BASE or clause.logic_type
                 }
             end
-            if i_results == 1 and results[1].success then
+            if results_size == 1 and results[1].success then
                 ml_count = ml_count + 1
                 matched_laws[ml_count] = law
-            elseif i_results > 1 then
+            elseif results_size > 1 then
                 local state = results[1].success
-                for i = 2, i_results do
-                    local result = results[i]
-                    if result.logic == LOGIC_TYPE_AND then
+                for j = 2, results_size do
+                    local result = results[j]
+                    local logic_type = result.logic
+                    if logic_type == LOGIC_TYPE_AND then
                         state = (state and result.success)
-                    elseif result.logic == LOGIC_TYPE_OR then
+                    elseif logic_type == LOGIC_TYPE_OR then
                         if state then
                             break
                         else
@@ -677,7 +683,7 @@ local function ExecuteEffect(law, effect, event)
         event.stop_effects = (event.fine_success == true or event.fine_success == nil)
     elseif effect_type == EFFECT_TYPE_DISALLOW then
         if event.item_stack and event.recipe then
-            Player.set_data(player, {
+            set_player_data(player, {
                 remove_item = event.item_stack
             })
             for _, ingredient in pairs(event.recipe.ingredients) do
@@ -725,7 +731,7 @@ local function ExecuteEffect(law, effect, event)
             game.unmute_player(player)
         end
     elseif effect_type == EFFECT_TYPE_LICENSE and player then
-        local player_data = Player.get_data(player)
+        local player_data = get_player_data(player)
         local effect_license_type = effect.effect_license_type
         if effect_license_type == EFFECT_LICENSE_TYPE_CAR then
             player_data.disallow_car = not effect.effect_license_state
@@ -748,7 +754,7 @@ local function ExecuteEffect(law, effect, event)
                 game.permissions.get_group("no_artillery").add_player(player)
             end
         end
-        Player.set_data(player, player_data)
+        set_player_data(player, player_data)
     elseif effect_type == EFFECT_TYPE_REVOKE_LAW then
         RevokeLaw(law)
     elseif effect_type == EFFECT_TYPE_CUSTOM_SCRIPT and effect.script_text then
@@ -963,7 +969,7 @@ Event.register(defines.events.on_player_driving_changed_state, function(event)
     local player = game.get_player(event.player_index)
     local driver = vehicle.get_driver()
     if driver and driver.player == player then
-        local player_data = Player.get_data(player)
+        local player_data = get_player_data(player)
         if player_data.disallow_car and vehicle.name == "car" then
             vehicle.set_driver(nil)
         elseif player_data.disallow_tank and vehicle.name == "tank" then
@@ -986,7 +992,7 @@ end)
 script.on_nth_tick(3, function(event)
     -- Remove items (queued up via law effects)
     for _, player in pairs(game.connected_players) do
-        local data = Player.get_data(player)
+        local data = get_player_data(player)
         if data.remove_item then
             player.remove_item(data.remove_item)
             data.remove_item = nil
@@ -2136,7 +2142,7 @@ function CreateEffectGUI(parent, effect, read_only)
             if not effect.effect_fine_item then
                 effect.effect_fine_item = nil
             end
-            local item_picker = gui.add{
+            gui.add{
                 type = "choose-elem-button",
                 name = "effect_fine_item",
                 elem_type = "item",
@@ -2169,7 +2175,7 @@ function CreateEffectGUI(parent, effect, read_only)
             if not effect.effect_reward_item then
                 effect.effect_reward_item = nil
             end
-            local item_picker = gui.add{
+            gui.add{
                 type = "choose-elem-button",
                 name = "effect_reward_item",
                 elem_type = "item",
@@ -2296,10 +2302,13 @@ function CreateValueFields(gui, clause, prefix, read_only)
 end
 
 local function on_configuration_changed(event)
-    for _, player in pairs(game.players) do
-        local old_button = player.gui.top.lawful_evil_button
-        if old_button then
-            old_button.destroy()
+    local mod_changes = event.mod_changes["m-lawful-evil"]
+    if not (mod_changes and mod_changes.old_version) then return end
+
+    local version = tonumber(string.gmatch(mod_changes.old_version, "%d+.%d+")())
+
+    if version < 0.9 then
+        for _, player in pairs(game.players) do
             AddLawfulButton(player)
         end
     end
