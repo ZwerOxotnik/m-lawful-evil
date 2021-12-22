@@ -373,16 +373,14 @@ end)
 
 local function AddLawfulButton(player)
     local flow = mod_gui.get_button_flow(player)
-    local button = flow.lawful_evil_button
-    if button then
-        button.destroy()
+    if flow.lawful_evil_button then
+        return
     end
 
     flow.add{
         type = "sprite-button",
         name = "lawful_evil_button",
-        sprite = "lawful-button-sprite",
-        style = "slot_button"
+        style = "lawful_evil_button"
     }
 end
 
@@ -2307,8 +2305,12 @@ local function on_configuration_changed(event)
 
     local version = tonumber(string.gmatch(mod_changes.old_version, "%d+.%d+")())
 
-    if version < 0.9 then
+    if version < 0.10 then
         for _, player in pairs(game.players) do
+			local lawful_evil_button = mod_gui.get_button_flow(player).lawful_evil_button
+			if lawful_evil_button then
+				lawful_evil_button.destroy()
+			end
             AddLawfulButton(player)
         end
     end
