@@ -372,16 +372,18 @@ end)
 -- end)
 
 local function AddLawfulButton(player)
-    local flow = mod_gui.get_button_flow(player)
-    if flow.lawful_evil_button then
-        return
-    end
+	local relative = player.gui.relative
+	if relative.lawful_evil_button then
+		return
+	end
 
-    flow.add{
-        type = "sprite-button",
-        name = "lawful_evil_button",
-        style = "lawful_evil_button"
-    }
+	local left_anchor = {gui = defines.relative_gui_type.controller_gui, position = defines.relative_gui_position.left}
+	relative.add{
+		type = "sprite-button",
+		name = "lawful_evil_button",
+		style = "lawful_evil_button", -- see data.lua
+		anchor = left_anchor
+	}
 end
 
 local function IsDaytime()
@@ -987,6 +989,23 @@ Event.register(defines.events.on_player_respawned, function(event)
     ExecuteLaws(laws, event)
 end)
 
+local function remove_player_GUIs(event)
+    local player = game.get_player(event.player_index)
+    if not (player and player.valid) then return end
+
+	local screen = player.gui.screen
+    local lawful_evil_gui = screen["lawful_evil_gui"]
+	if lawful_evil_gui then
+		lawful_evil_gui.destroy()
+	end
+    local lawful_evil_law_gui = screen["lawful_evil_law_gui"]
+	if lawful_evil_law_gui then
+		lawful_evil_law_gui.destroy()
+	end
+end
+Event.register(defines.events.on_player_left_game, remove_player_GUIs)
+Event.register(defines.events.on_player_joined_game, remove_player_GUIs)
+
 script.on_nth_tick(3, function(event)
     -- Remove items (queued up via law effects)
     for _, player in pairs(game.connected_players) do
@@ -999,8 +1018,8 @@ script.on_nth_tick(3, function(event)
 end)
 
 local function RefreshAllLawfulEvilGui()
-    for _, player in pairs(game.players) do
-        local lawful_gui = player.gui.center["lawful_evil_gui"]
+    for _, player in pairs(game.connected_players) do
+        local lawful_gui = player.gui.screen["lawful_evil_gui"]
         if lawful_gui then
             lawful_gui.destroy()
             CreateLawfulEvilGUI(player)
@@ -1076,11 +1095,12 @@ end)
 
 Gui.on_click("lawful_evil_button", function(event)
     local player = game.get_player(event.player_index)
-    local lawful_gui = player.gui.center.lawful_evil_gui
+	local screen = player.gui.screen
+    local lawful_gui = screen.lawful_evil_gui
     if lawful_gui then
         lawful_gui.destroy()
     else
-        local law_gui = player.gui.center.lawful_evil_law_gui
+        local law_gui = screen.lawful_evil_law_gui
         if law_gui then
             law_gui.destroy()
         else
@@ -1091,7 +1111,7 @@ end)
 
 Gui.on_click("close_lawful_gui", function(event)
     local player = game.get_player(event.player_index)
-    local lawful_gui = player.gui.center.lawful_evil_gui
+    local lawful_gui = player.gui.screen.lawful_evil_gui
     if lawful_gui then
         lawful_gui.destroy()
     end
@@ -1099,7 +1119,7 @@ end)
 
 Gui.on_click("propose_law", function(event)
     local player = game.get_player(event.player_index)
-    local lawful_gui = player.gui.center.lawful_evil_gui
+    local lawful_gui = player.gui.screen.lawful_evil_gui
     if lawful_gui then
         lawful_gui.destroy()
     end
@@ -1126,7 +1146,7 @@ end
 
 Gui.on_click("add_clause", function(event)
     local player = game.get_player(event.player_index)
-    local law_gui = player.gui.center.lawful_evil_law_gui
+    local law_gui = player.gui.screen.lawful_evil_law_gui
     if law_gui then
         local subclause = CreateSubClause()
         CreateClauseGUI(law_gui.clauses_frame.clauses, subclause)
@@ -1136,7 +1156,7 @@ end)
 
 Gui.on_click("add_effect", function(event)
     local player = game.get_player(event.player_index)
-    local law_gui = player.gui.center.lawful_evil_law_gui
+    local law_gui = player.gui.screen.lawful_evil_law_gui
     if law_gui then
         local effect = {
             base_effect = false,
@@ -1151,7 +1171,7 @@ end)
 
 Gui.on_click("delete_.+", function(event)
     local player = game.get_player(event.player_index)
-    local law_gui = player.gui.center.lawful_evil_law_gui
+    local law_gui = player.gui.screen.lawful_evil_law_gui
     local elem = event.element
     if law_gui then
         elem.parent.destroy()
@@ -1161,11 +1181,12 @@ end)
 
 Gui.on_click("vote_law_([0-9]+)", function(event)
     local player = game.get_player(event.player_index)
-    local law_gui = player.gui.center["lawful_evil_gui"]
+	local screen = player.gui.screen
+    local law_gui = screen["lawful_evil_gui"]
     if law_gui then
         law_gui.destroy()
     else
-        law_gui = player.gui.center.lawful_evil_law_gui
+        law_gui = screen.lawful_evil_law_gui
         if law_gui then
             law_gui.destroy()
         end
@@ -1184,11 +1205,12 @@ end)
 
 Gui.on_click("view_law_([0-9]+)", function(event)
     local player = game.get_player(event.player_index)
-    local law_gui = player.gui.center["lawful_evil_gui"]
+	local screen = player.gui.screen
+    local law_gui = screen["lawful_evil_gui"]
     if law_gui then
         law_gui.destroy()
     else
-        law_gui = player.gui.center.lawful_evil_law_gui
+        law_gui = screen.lawful_evil_law_gui
         if law_gui then
             law_gui.destroy()
         end
@@ -1259,7 +1281,7 @@ end
 
 Gui.on_click("submit_law", function(event)
     local player = game.get_player(event.player_index)
-    local gui = player.gui.center.lawful_evil_law_gui
+    local gui = player.gui.screen.lawful_evil_law_gui
     if gui == nil then return end
 
     local law = SaveLaw(gui)
@@ -1291,7 +1313,7 @@ Gui.on_selection_state_changed(".+", function(event)
     local elem = event.element
     if elem.parent.parent.name == "clauses" then
         local player = game.get_player(event.player_index)
-        local gui = player.gui.center.lawful_evil_law_gui
+        local gui = player.gui.screen.lawful_evil_law_gui
         local law = SaveLaw(gui)
         gui.clauses_frame.clauses.clear()
         local clauses = law.clauses
@@ -1300,7 +1322,7 @@ Gui.on_selection_state_changed(".+", function(event)
         end
     elseif elem.parent.parent.name == "effects" then
         local player = game.get_player(event.player_index)
-        local gui = player.gui.center.lawful_evil_law_gui
+        local gui = player.gui.screen.lawful_evil_law_gui
         local law = SaveLaw(gui)
         gui.effects_frame.effects.clear()
         local effects = law.effects
@@ -1510,7 +1532,7 @@ function SaveLaw(gui)
 end
 
 function CloseLawGui(player)
-    local gui = player.gui.center.lawful_evil_law_gui
+    local gui = player.gui.screen.lawful_evil_law_gui
     if gui then
         gui.destroy()
         CreateLawfulEvilGUI(player)
@@ -1642,12 +1664,13 @@ function CreateDropDown(params)
 end
 
 function CreateLawfulEvilGUI(player)
-    local gui = player.gui.center.add{
+    local gui = player.gui.screen.add{
         type = "frame",
         name = "lawful_evil_gui",
         caption = {"mod-name.m-lawful-evil"},
         direction = "vertical"
     }
+	gui.location = {x = 0, y = 50}
 
     local passed_laws = {}
     local proposed_laws = {}
@@ -1810,12 +1833,14 @@ function CreateLawGUI(event)
     local law = event.law
     local player = event.player
     local read_only = event.read_only
-    local gui = player.gui.center.add{
+    local gui = player.gui.screen.add{
         type = "frame",
         name = "lawful_evil_law_gui",
         caption = read_only and law.title or {"lawful-evil.gui.propose-law"},
         direction = "vertical"
     }
+	gui.force_auto_center()
+
     if not read_only then
         local title = gui.add{
             type = "textfield",
@@ -2305,8 +2330,16 @@ local function on_configuration_changed(event)
 
     local version = tonumber(string.gmatch(mod_changes.old_version, "%d+.%d+")())
 
-    if version < 0.10 then
+    if version < 0.11 then
         for _, player in pairs(game.players) do
+			local lawful_evil_gui = player.gui.center.lawful_evil_gui
+			if lawful_evil_gui then
+				lawful_evil_gui.destroy()
+			end
+			local lawful_evil_law_gui = player.gui.center.lawful_evil_law_gui
+			if lawful_evil_law_gui then
+				lawful_evil_law_gui.destroy()
+			end
 			local lawful_evil_button = mod_gui.get_button_flow(player).lawful_evil_button
 			if lawful_evil_button then
 				lawful_evil_button.destroy()
