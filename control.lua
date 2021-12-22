@@ -808,8 +808,10 @@ Event.register(defines.events.on_player_created, function(event)
 end)
 
 Event.register(defines.events.on_console_chat, function(event)
+    if event.player_index == nil then return end
     local player = game.get_player(event.player_index)
     if not (player and player.valid) then return end
+
     local laws = LawMatch(WHEN_PLAYER_CHATS, event.message, player.force, player)
     event.force = player.force
     ExecuteLaws(laws, event)
