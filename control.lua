@@ -769,7 +769,7 @@ local function ExecuteLaws(laws, event)
         player = game.get_player(player_index) -- TODO: change
     end
 
-    for i=1, #laws do
+    for i=#laws, 1, -1 do
         local law = laws[i]
         -- local clause = law.clauses[1] -- TODO: check
 
@@ -1031,7 +1031,7 @@ end
 
 local function CheckVotes()
     local laws = global.laws
-    for i=1, #laws do
+    for i=#laws, 1, -1 do
         law = laws[i]
         if not law.passed and not law.linked_law and game.tick >= law.vote_end_tick then
             local votes = GetLawVotes(law)

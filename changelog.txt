@@ -1,8 +1,8 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.11.2
+Version: 0.11.3
 Date: 2022-09-24
   Bugfixes:
-    - Fixed possible crush due to incorrect law deletion (https://mods.factorio.com/mod/m-lawful-evil/discussion/632f0aa787e8c9054a0cfef6)
+    - Fixed possible crush due to incorrect linked law deletion (https://mods.factorio.com/mod/m-lawful-evil/discussion/632f0aa787e8c9054a0cfef6)
 ---------------------------------------------------------------------------------------------------
 Version: 0.11.1
 Date: 2021-12-22
