@@ -1569,7 +1569,7 @@ function RevokeLaw(law, index)
     script.raise_event(module.self_events.on_pre_revoke_law, {law_id = law_id})
     table.remove(global.laws, index)
     local laws = global.laws
-    for i=1, #laws do
+    for i=#laws, 1, -1 do
         other_law = laws[i]
         if other_law.linked_law == law_id then
             RevokeLaw(other_law, i)
