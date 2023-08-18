@@ -28,7 +28,7 @@ Event = {
     }
 }
 
-function Event.get_player(event) 
+function Event.get_player(event)
     if event.player_index then
         return game.players[event.player_index]
     end
@@ -78,7 +78,7 @@ function Event.dispatch(event)
             local success, err = pcall(handler, event)
             if not success then
                 -- may be nil in on_load
-                if _G.game then
+                if game then
                     if Game.print_all(err) == 0 then
                         -- no players received the message, force a real error so someone notices
                         error(err)

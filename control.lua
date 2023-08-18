@@ -11,6 +11,7 @@ local get_player_data = Player.get_data
 local set_player_data = Player.set_data
 
 
+local EDITOR_TYPE = defines.controllers.editor
 local WHEN_PLAYER_BUILDS = "player-builds"
 local WHEN_PLAYER_MINES = "player-mines"
 local WHEN_PLAYER_DAMAGES = "player-damages"
@@ -330,6 +331,7 @@ local function EasyAPI_add_to_balance(force, amount)
     end
 end
 
+---@return integer
 local function EasyAPI_get_balance(force)
     if is_EasyAPI_loaded() then
         return (call("EasyAPI", "get_force_money", force.index) or 0)
@@ -525,6 +527,7 @@ local function CalculateWithOperation(value_1, value_2, operation)
 end
 
 -- TODO: optimize
+---@return boolean
 local function ClauseMatch(law, clause, type, target, force, player)
     if clause.when_type == WHEN_THIS_LAW_PASSED and clause.base_clause then
         return law.id == target
@@ -574,9 +577,12 @@ local function ClauseMatch(law, clause, type, target, force, player)
             end
         end
     end
+
     return false
 end
 
+---@param force LuaForce
+---@param player LuaPlayer
 local function LawMatch(type, target, force, player)
     local matched_laws = {}
     local ml_count = 0
@@ -656,9 +662,11 @@ local function ExecuteEffect(law, effect, event)
         law.offences[player_index] = 0
     elseif effect_type == EFFECT_TYPE_REWARD then
         if effect.effect_reward_type == EFFECT_REWARD_TYPE_ITEM then
+			local result = floor(value)
+			if result <= 0 then return end
             player.insert{
                 name = effect.effect_reward_item,
-                count = floor(value)
+                count = result
             }
         elseif effect.effect_reward_type == EFFECT_REWARD_TYPE_MONEY then
             EasyAPI_add_to_balance(force, value)
@@ -668,11 +676,13 @@ local function ExecuteEffect(law, effect, event)
             event.fine_success = true
             player.clear_items_inside()
         elseif effect.effect_fine_type == EFFECT_FINE_TYPE_ITEM then
+			local result = floor(value)
+			if result <= 0 then return end
             local count = player.get_item_count(effect.effect_fine_item)
-            event.fine_success = (count >= floor(value))
+            event.fine_success = (count >= result)
             player.remove_item{
                 name = effect.effect_fine_item,
-                count = floor(value)
+                count = result
             }
         elseif effect.effect_fine_type == EFFECT_FINE_TYPE_MONEY then
             local balance = EasyAPI_get_balance(force)
@@ -686,8 +696,11 @@ local function ExecuteEffect(law, effect, event)
             set_player_data(player, {
                 remove_item = event.item_stack
             })
+			local stack = {name = "", count = 0}
             for _, ingredient in pairs(event.recipe.ingredients) do
-                player.insert{name = ingredient.name, count = ingredient.amount}
+				stack.name = ingredient.name
+				stack.count = ingredient.amount
+                player.insert(stack)
             end
         elseif event.research then
             force.current_research = nil
@@ -865,23 +878,24 @@ local function on_entity_damaged(event)
     elseif cause.type == "car" then
         local passenger = cause.get_passenger()
         local driver = cause.get_driver()
-        if passenger and driver then
+        if passenger and passenger.valid and driver and driver.valid then
             law_on_entity_damaged(event, passenger.player)
             law_on_entity_damaged(event, driver.player)
-        elseif passenger then
+        elseif passenger and passenger.valid then
             law_on_entity_damaged(event, passenger.player)
-        elseif driver then
+        elseif driver and driver.valid then
             law_on_entity_damaged(event, driver.player)
         end
     end
 end
 Event.register(defines.events.on_entity_damaged, function(event)
-    pcall(on_entity_damaged, event)
+    pcall(on_entity_damaged, event) -- TODO: recheck laws with on_entity_damaged more
 end)
 
 Event.register(defines.events.on_built_entity, function(event)
     local player = game.get_player(event.player_index)
-    if player.controller_type == defines.controllers.editor then return end
+    if not (player and player.valid) then return end
+    if player.controller_type == EDITOR_TYPE then return end
 
     local laws = LawMatch(WHEN_PLAYER_BUILDS, event.created_entity.name, player.force, player)
     event.entity = event.created_entity
@@ -892,7 +906,8 @@ end)
 
 Event.register(defines.events.on_player_mined_entity, function(event)
     local player = game.get_player(event.player_index)
-    if player.controller_type == defines.controllers.editor then return end
+    if not (player and player.valid) then return end
+    if player.controller_type == EDITOR_TYPE then return end
 
     local laws = LawMatch(WHEN_PLAYER_MINES, event.entity.name, player.force, player)
     event.mined = true
@@ -902,7 +917,8 @@ end)
 
 Event.register(defines.events.on_player_crafted_item, function(event)
     local player = game.get_player(event.player_index)
-    if player.controller_type == defines.controllers.editor then return end
+    if not (player and player.valid) then return end
+    if player.controller_type == EDITOR_TYPE then return end
 
     local laws = LawMatch(WHEN_PLAYER_CRAFTS, event.item_stack.name, player.force, player)
     event.force = player.force
@@ -911,7 +927,8 @@ end)
 
 Event.register(defines.events.on_player_built_tile, function(event)
     local player = game.get_player(event.player_index)
-    if player.controller_type == defines.controllers.editor then return end
+    if not (player and player.valid) then return end
+    if player.controller_type == EDITOR_TYPE then return end
 
     for _, tile in pairs(event.tiles) do
         local laws = LawMatch(WHEN_PLAYER_TILES, event.item.name, player.force, player)
@@ -922,7 +939,8 @@ end)
 
 Event.register(defines.events.on_player_mined_tile, function(event)
     local player = game.get_player(event.player_index)
-    if player.controller_type == defines.controllers.editor then return end
+    if not (player and player.valid) then return end
+    if player.controller_type == EDITOR_TYPE then return end
 
     for _, tile in pairs(event.tiles) do
         event.item = tile.old_tile.items_to_place_this
@@ -951,7 +969,7 @@ end)
 
 Event.register(defines.events.on_player_died, function(event)
     local cause = event.cause
-    if not (cause and cause.is_player()) then return end
+    if not (cause and cause.valid and cause.is_player()) then return end
 
     local laws = LawMatch(
         WHEN_PLAYER_KILLS,
@@ -2080,7 +2098,7 @@ function CreateClauseGUI(parent, clause, read_only)
             elem_type = elem_type,
             enabled = not read_only
         }
-        pcall(function()
+        pcall(function() --TODO: recheck
             clause_when_elem.elem_value = clause.when_elem
         end)
         if elem_type == "entity" then
