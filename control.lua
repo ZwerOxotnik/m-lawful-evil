@@ -322,7 +322,7 @@ module.self_events = require 'self_events'
 
 
 local function is_EasyAPI_loaded()
-    return game.active_mods["EasyAPI"] ~= nil
+    return script.active_mods["EasyAPI"] ~= nil
 end
 
 local function EasyAPI_add_to_balance(force, amount)
@@ -340,8 +340,8 @@ local function EasyAPI_get_balance(force)
 end
 
 script.on_init(function()
-    global.laws = global.laws or {}
-    global.last_id = global.last_id or 0
+    storage.laws = storage.laws or {}
+    storage.last_id = storage.last_id or 0
     local example_law = GetNewLaw(nil)
     example_law.title = "Example Law"
     example_law.description = "This law is an example"
@@ -354,17 +354,17 @@ script.on_init(function()
         effect_type = EFFECT_TYPE_ALERT,
         effect_text = "Example Law"
     }
-    table.insert(global.laws, example_law)
+    table.insert(storage.laws, example_law)
 
     local no_driving = game.permissions.get_group("no_driving") or game.permissions.create_group("no_driving")
     no_driving.set_allows_action(defines.input_action.toggle_driving, false)
     local no_artillery = game.permissions.get_group("no_artillery") or game.permissions.create_group("no_artillery")
-    no_artillery.set_allows_action(defines.input_action.use_artillery_remote, false)
+    -- no_artillery.set_allows_action(defines.input_action.use_artillery_remote, false) -- TODO: recheck and fix!
     local no_shooting = game.permissions.get_group("no_shooting") or game.permissions.create_group("no_shooting")
     no_shooting.set_allows_action(defines.input_action.change_shooting_state, false)
 end)
 
--- commands.add_command("pass-laws", "pass laws", function()    local laws = global.laws
+-- commands.add_command("pass-laws", "pass laws", function()    local laws = storage.laws
 --     for i=1, #laws do
 --         law = laws[i]
 --         if not law.passed then
@@ -406,18 +406,23 @@ local function CalculatePercentageValue(value, type, item, force, player)
     elseif type == PERCENTAGE_TYPE_FORCE_PLAYER_COUNT then
         return #force.players * factor
     elseif type == PERCENTAGE_TYPE_EVOLUTION_FACTOR then
-        return force.evolution_factor * factor
+        return force.get_evolution_factor(player.surface) * factor
     elseif type == PERCENTAGE_TYPE_ROCKETS_LAUNCHED then
         return force.rockets_launched * factor
     elseif type == PERCENTAGE_TYPE_TOTAL_PRODUCTION then
         if item then
-            return force.item_production_statistics.get_input_count(item) * factor
+			local get_item_production_statistics = force.get_item_production_statistics
+			local item_count = 0
+			for _, surface in pairs(game.surfaces) do
+				item_count = item_count + get_item_production_statistics(surface).get_input_count(item)
+			end
+            return item_count * factor
         else
             return 0
         end
     elseif type == PERCENTAGE_TYPE_RATE_PRODUCTION then
-        if item and global.production_rates then
-            local item_production = global.production_rates[force.name].production[item]
+        if item and storage.production_rates then
+            local item_production = storage.production_rates[force.name].production[item]
             if item_production then
                 return item_production.rate
             end
@@ -425,13 +430,18 @@ local function CalculatePercentageValue(value, type, item, force, player)
         return 0
     elseif type == PERCENTAGE_TYPE_TOTAL_CONSUMPTION then
         if item then
-            return force.item_production_statistics.get_output_count(item) * factor
+			local get_item_production_statistics = force.get_item_production_statistics
+			local item_count = 0
+			for _, surface in pairs(game.surfaces) do
+				item_count = item_count + get_item_production_statistics(surface).get_output_count(item)
+			end
+            return item_count * factor
         else
             return 0
         end
     elseif type == PERCENTAGE_TYPE_RATE_CONSUMPTION then
-        if item and global.production_rates then
-            local item_consumption = global.production_rates[force.name].consumption[item]
+        if item and storage.production_rates then
+            local item_consumption = storage.production_rates[force.name].consumption[item]
             if item_consumption then
                 return item_consumption.rate
             end
@@ -503,7 +513,7 @@ local function GetTechnologies()
     if _technologies == nil then
         _technologies = {}
         local i = 0
-        for tech_name, tech in pairs(game.technology_prototypes) do
+        for tech_name, tech in pairs(prototypes.technology) do
             i = i + 1
             _technologies[i] = tech.localised_name
         end
@@ -571,7 +581,7 @@ local function ClauseMatch(law, clause, type, target, force, player)
             return clause.when_elem == target
         else
             if clause.when_entity_similar_type == true then
-                return game.entity_prototypes[target].type == game.entity_prototypes[clause.when_elem].type
+                return prototypes.entity[target].type == prototypes.entity[clause.when_elem].type
             else
                 return clause.when_elem == target
             end
@@ -586,7 +596,7 @@ end
 local function LawMatch(type, target, force, player)
     local matched_laws = {}
     local ml_count = 0
-    local laws = global.laws
+    local laws = storage.laws
     for i=1, #laws do
         law = laws[i]
         if law.passed then
@@ -897,8 +907,8 @@ Event.register(defines.events.on_built_entity, function(event)
     if not (player and player.valid) then return end
     if player.controller_type == EDITOR_TYPE then return end
 
-    local laws = LawMatch(WHEN_PLAYER_BUILDS, event.created_entity.name, player.force, player)
-    event.entity = event.created_entity
+    local laws = LawMatch(WHEN_PLAYER_BUILDS, event.entity.name, player.force, player)
+    event.entity = event.entity
     event.built = true
     event.force = player.force
     ExecuteLaws(laws, event)
@@ -1050,7 +1060,7 @@ local function RefreshAllLawfulEvilGui()
 end
 
 local function CheckVotes()
-    local laws = global.laws
+    local laws = storage.laws
     for i=#laws, 1, -1 do
         law = laws[i]
         if not law.passed and not law.linked_law and game.tick >= law.vote_end_tick then
@@ -1071,11 +1081,11 @@ end
 
  -- For specilizations
 local function CheckProductionRates()
-    if not global.production_rates then
-        global.production_rates = {}
+    if not storage.production_rates then
+        storage.production_rates = {}
     end
 
-    local production_rates = global.production_rates
+    local production_rates = storage.production_rates
     for _, force in pairs(game.forces) do
         local force_name = force.name
         if not production_rates[force_name] then
@@ -1085,27 +1095,34 @@ local function CheckProductionRates()
             }
         end
         local rates = production_rates[force_name]
-        for item, count in pairs(force.item_production_statistics.input_counts) do
-            local production = rates.production[item]
-            if production then
-                production.rate = count - production.last
-            else
-                rates.production[item] = {
-                    rate = 0,
-                    last = count
-                }
-            end
+
+		local get_item_production_statistics = force.get_item_production_statistics
+		for _, surface in pairs(game.surfaces) do
+			for item, count in pairs(get_item_production_statistics(surface).input_counts) do
+				local production = rates.production[item]
+				if production then
+					production.rate = count - production.last
+				else
+					rates.production[item] = { -- TODO: FIX, IT'S WRONG!!!
+						rate = 0,
+						last = count
+					}
+				end
+			end
         end
-        for item, count in pairs(force.item_production_statistics.output_counts) do
-            local consumption = rates.consumption[item]
-            if consumption then
-                consumption.rate = count - consumption.last
-            else
-                rates.consumption[item] = {
-                    rate = 0,
-                    last = count
-                }
-            end
+
+		for _, surface in pairs(game.surfaces) do
+			for item, count in pairs(get_item_production_statistics(surface).output_counts) do
+				local consumption = rates.consumption[item]
+				if consumption then
+					consumption.rate = count - consumption.last
+				else
+					rates.consumption[item] = { -- TODO: FIX, IT'S WRONG!!!
+						rate = 0,
+						last = count
+					}
+				end
+			end
         end
     end
 end
@@ -1214,7 +1231,7 @@ Gui.on_click("vote_law_([0-9]+)", function(event)
         end
     end
     local law_id = tonumber(event.match)
-    local law = global.laws[law_id]
+    local law = storage.laws[law_id]
     if law then
         CreateLawGUI({
             player = player,
@@ -1238,7 +1255,7 @@ Gui.on_click("view_law_([0-9]+)", function(event)
         end
     end
     local law_id = tonumber(event.match)
-    local law = global.laws[law_id]
+    local law = storage.laws[law_id]
     if law then
         CreateLawGUI({
             player = player,
@@ -1254,7 +1271,7 @@ function ParseVoteEvent(event)
     return {
         player = game.get_player(event.player_index),
         law_index = law_index,
-        law = global.laws[law_index]
+        law = storage.laws[law_index]
     }
 end
 
@@ -1316,14 +1333,14 @@ Gui.on_click("submit_law", function(event)
         end
         law.passed = true
     end
-    table.insert(global.laws, law)
+    table.insert(storage.laws, law)
     gui.destroy()
     CreateLawfulEvilGUI(player)
 end)
 
 Gui.on_selection_state_changed("when_elem_type", function(event)
     local elem = event.element
-    -- local law = global.laws[] -- TODO: check
+    -- local law = storage.laws[] -- TODO: check
     local law = nil
     if law.when_elem_type ~= elem.selected_index then
         law.when_elem = nil
@@ -1355,9 +1372,9 @@ Gui.on_selection_state_changed(".+", function(event)
 end)
 
 function GetNewLaw(player)
-    global.last_id = global.last_id + 1
+    storage.last_id = storage.last_id + 1
     return {
-        id = global.last_id,
+        id = storage.last_id,
         title = "Title...",
         description = "State your intent...",
         creator = player and player.name or "?",
@@ -1383,7 +1400,7 @@ function GetNewLaw(player)
 end
 
 local function GetLawById(id)
-    local laws = global.laws
+    local laws = storage.laws
     for i=1, #laws do
         law = laws[i]
         if law.id == id then
@@ -1538,7 +1555,7 @@ function SaveLaw(gui)
     end
     if gui.buttons.linked_law.selected_index > 1 then
         local options = {0}
-        local laws = global.laws
+        local laws = storage.laws
         for i=1, #laws do
             law = laws[i]
             if not law.passed then
@@ -1574,7 +1591,7 @@ function PassLaw(law)
     ExecuteLaws(matched_laws, {
         all_players = true
     })
-    local laws = global.laws
+    local laws = storage.laws
     for i=1, #laws do
         other_law = laws[i]
         if not other_law.passed and other_law.linked_law == law.id then
@@ -1587,8 +1604,8 @@ function RevokeLaw(law, index)
     game.print({"lawful-evil.messages.law-is-revoked", law.title})
     local law_id = law.id
     script.raise_event(module.self_events.on_pre_revoke_law, {law_id = law_id})
-    table.remove(global.laws, index)
-    local laws = global.laws
+    table.remove(storage.laws, index)
+    local laws = storage.laws
     for i=#laws, 1, -1 do
         other_law = laws[i]
         if other_law.linked_law == law_id then
@@ -1640,7 +1657,7 @@ function GetEntityTypes()
     if _entity_types == nil then
         _entity_types = {}
         local type_map = {}
-        for name, entity in pairs(game.entity_prototypes) do
+        for name, entity in pairs(prototypes.entity) do
             local type = entity.type
             if not type_map[type] then
                 type_map[type] = 1
@@ -1696,7 +1713,7 @@ function CreateLawfulEvilGUI(player)
 
     local passed_laws = {}
     local proposed_laws = {}
-    local laws = global.laws
+    local laws = storage.laws
     for i=1, #laws do
         law = laws[i]
         law.index = i
@@ -1805,20 +1822,18 @@ function CreateLawfulEvilGUI(player)
             meta_flow.add{
                 type = "label",
                 name = "mins_left",
-                caption = {"lawful-evil.gui.voting-mins-left", voting_mins_left},
-                style = "description_value_label"
+                caption = {"lawful-evil.gui.voting-mins-left", voting_mins_left}
             }
         else
             meta_flow.add{
                 type = "label",
-                caption = {"lawful-evil.gui.linked-to", GetLawById(law.linked_law).title},
-                style = "description_value_label"
+                caption = {"lawful-evil.gui.linked-to", GetLawById(law.linked_law).title}
             }
         end
         meta_flow.add{
             type = "label",
             caption = {"lawful-evil.gui.proposed-by", law.creator or "?"},
-            style = "menu_message"
+            style = "bold_orange_label"
         }
         if not law.linked_law then
             local votes = GetLawVotes(law)
@@ -1935,7 +1950,7 @@ function CreateLawGUI(event)
         local options = {{"lawful-evil.gui.none"}}
         local options_indexed = {}
         local j = 2
-        local laws = global.laws
+        local laws = storage.laws
         for i=1, #laws do
             law = laws[i]
             if not law.passed then
@@ -2049,7 +2064,7 @@ function CreateClauseGUI(parent, clause, read_only)
         items = clause_type_drop_down_options,
         selected_index = selected_clause_type_index,
         read_only = read_only,
-        label_style = "menu_message"
+        label_style = "bold_orange_label"
     }
     local when_type = clause.when_type
     if when_type == WHEN_THIS_LAW_PASSED then
@@ -2072,7 +2087,7 @@ function CreateClauseGUI(parent, clause, read_only)
             items = OPERATION_TYPE_ITEMS,
             selected_index = clause.when_operation_type,
             read_only = read_only,
-            label_style = "menu_message"
+            label_style = "bold_orange_label"
         }
         CreateValueFields(gui, clause, "when_2_", read_only)
     elseif when_type == WHEN_FORCE_RESEARCHES then
@@ -2143,7 +2158,7 @@ function CreateEffectGUI(parent, effect, read_only)
         items = EFFECT_TYPE_ITEMS,
         selected_index = effect.effect_type,
         read_only = read_only,
-        label_style = "menu_message"
+        label_style = "bold_orange_label"
     }
     if effect.effect_type == EFFECT_TYPE_DISALLOW then
         gui.add{
@@ -2308,8 +2323,7 @@ function CreateValueFields(gui, clause, prefix, read_only)
         name = prefix.."value_type",
         items = VALUE_TYPE_ITEMS,
         selected_index = value_type,
-        read_only = read_only,
-        label_style = "description_value_label"
+        read_only = read_only
     }
     if value_type == VALUE_TYPE_PERCENTAGE then
         local pct_type = clause[prefix.."value_percentage_type"]
@@ -2322,7 +2336,7 @@ function CreateValueFields(gui, clause, prefix, read_only)
             items = PERCENTAGE_TYPE_ITEMS,
             selected_index = pct_type,
             read_only = read_only,
-            label_style = "menu_message"
+            label_style = "bold_orange_label"
         }
         if pct_type == PERCENTAGE_TYPE_BALANCE and not is_EasyAPI_loaded() then
             local missing = gui.add{
@@ -2381,7 +2395,7 @@ remote.add_interface('lawful-evil', {
         return module.self_events[name]
     end,
     get_law_by_id = function(target_id)
-        local laws = global.laws
+        local laws = storage.laws
         for i=1, #laws do
             law = laws[i]
             if law.id == target_id then
@@ -2393,7 +2407,7 @@ remote.add_interface('lawful-evil', {
     get_new_law = GetNewLaw,
     InsertNewLaw = function(new_law)
         game.print({"lawful-evil.messages.law-is-submitted", new_law.title})
-        table.insert(global.laws, new_law)
+        table.insert(storage.laws, new_law)
     end,
     revoke_law = RevokeLaw
 })
