@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.13.0
+Date: 2026-02-07
+  Changes:
+    - Updated for Factorio 2.1 by ZwerOxotnik (and yet I didn't run the game, no one contacted me about changes again, so I've spend an ~hour to fix uploading, VS code is slow to work with, "can't wait for deserved concern about issues", I'm tired of mod portal's issues)
+---------------------------------------------------------------------------------------------------
 Version: 0.12.0
 Date: 2024-10-28
   Locale:
